@@ -32,6 +32,29 @@ jib {
     to {
         image = "public.ecr.aws/j8q9y0n6/responsivedev/example-app"
     }
+    container {
+        jvmFlags = listOf(
+            // OpenTelemetry Configurations
+            "-javaagent:/usr/share/java/responsive-demoapp/opentelemetry-javaagent-1.25.0.jar",
+            "-Dotel.metrics.exporter=otlp",
+            "-Dotel.service.name=demoapp",
+            "-Dotel.jmx.config=/otel-jmx.config",
+            "-Dotel.exporter.otlp.metrics.headers=\"api-key=biz,secret=baz\"",
+            "-Dotel.exporter.otlp.endpoint=" + System.getenv("CONTROLLER_ENDPOINT"),
+            "-Dotel.exporter.otlp.metrics.endpoint=" + System.getenv("CONTROLLER_ENDPOINT"),
+            "-Dotel.resource.attributes=responsiveApplicationId=responsive/responsive-demoapp",
+            "-Dotel.metric.export.interval=10000",
+
+            // JMX Configurations
+            "-Dcom.sun.management.jmxremote=true",
+            "-Dcom.sun.management.jmxremote.port=7192",
+            "-Dcom.sun.management.jmxremote.authenticate=false",
+            "-Dcom.sun.management.jmxremote.ssl=false",
+            "-Dcom.sun.management.jmxremote.local.only=false",
+            "-Dcom.sun.management.jmxremote.rmi.port=7192",
+            "-Djava.rmi.server.hostname=" + System.getenv("POD_IP")
+        )
+    }
 }
 
 repositories {
@@ -41,8 +64,9 @@ repositories {
 dependencies {
     implementation("org.apache.kafka", "kafka-streams", "3.4.0")
     implementation("dev.responsive", "kafka-client", "0.2.0")
-    implementation("org.slf4j:slf4j-log4j12:1.7.5")
-    implementation("org.apache.logging.log4j:log4j-core:2.17.1")
+    implementation("org.slf4j:slf4j-log4j12:2.0.5")
+    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
+    implementation("io.opentelemetry.javaagent:opentelemetry-javaagent:1.25.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")

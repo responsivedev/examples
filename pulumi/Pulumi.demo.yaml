@@ -1,2 +1,6 @@
 config:
   aws:region: us-west-2
+  responsive-demo:kafkaSaslJaasConfig:
+    secure: AAABAAeFd+bKZZpyncVJ7tlmjylyKS4M0MBNTYUgFWX4CdZUHmv4xIbcfxQQSK18SW0wP+r7Q2XJAK3KRzwofK1ax2QuVKM5VcGvi+qRA4Wpsuw8VYxAzYHgJMBg4i0XooCZUPyf5TJyBQrw5q4mz7QG9X3LEPyS7QLzHD5XlXDh9PRsXKPTSDiyMS0MNXtUofR9p6IkYUSDXNAzwxnv43q8t8wLuyUrUmf5XLizEdS7ag2CNshpDEwA6SiPLjiDCWq7Lhrx5rHV
+  responsive-demo:responsiveClientSecret:
+    secure: AAABAHZFobOd79LERaNv0PXmtAWNId5UQILiG21frsFuyKhdy3Xlq8UA+rM=

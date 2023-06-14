@@ -17,6 +17,7 @@ metadata:
 spec:
   applicationNamespace: responsive
   applicationName: example-app
+  status: POLICY_STATUS_MANAGED
   policyType: DEMO
   demoPolicy:
     maxReplicas: 2
@@ -157,6 +158,12 @@ namespace = pulumi_kubernetes.core.v1.Namespace(
   opts=pulumi.ResourceOptions(provider=eks_provider),
 )
 
+k8s.yaml.ConfigGroup(
+  "example-policy",
+  yaml=[POLICY],
+  opts=pulumi.ResourceOptions(provider=eks_provider)
+)
+
 deployment = k8s.apps.v1.Deployment(
   "ExampleDeployment",
   api_version="apps/v1",
@@ -183,15 +190,16 @@ deployment = k8s.apps.v1.Deployment(
         containers=[k8s.core.v1.ContainerArgs(
           name="example" + "-container",
           image="public.ecr.aws/j8q9y0n6/responsivedev/example-app",
-          image_pull_policy="IfNotPresent",
+          image_pull_policy="Always",
           env=[
             k8s.core.v1.EnvVarArgs(
               name="SASL_JAAS_CONFIG",
-              value=os.environ.get("SASL_JAAS_CONFIG")
+              value=config.get_secret("kafkaSaslJaasConfig")
             ),
             k8s.core.v1.EnvVarArgs(
               name="RESPONSIVE_CLIENT_SECRET",
-              value=os.environ.get("RESPONSIVE_CLIENT_SECRET")),
+              value=config.get_secret("responsiveClientSecret")
+            ),
             k8s.core.v1.EnvVarArgs(
               name="CONTROLLER_ENDPOINT",
               value="https://example.ctl.us-west-2.aws.cloud.responsive.dev"),
