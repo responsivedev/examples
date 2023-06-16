@@ -16,6 +16,7 @@
 
 package dev.responsive.example;
 
+import com.google.common.util.concurrent.RateLimiter;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -42,6 +43,7 @@ public class Generator implements Runnable {
   private final Random random = new Random();
   private final KafkaProducer<String, String> producer;
   private final AtomicLong bidId = new AtomicLong(0);
+  private final RateLimiter limiter = RateLimiter.create(1);
 
   public Generator(final KafkaProducer<String, String> producer) {
     this.producer = producer;
@@ -65,15 +67,10 @@ public class Generator implements Runnable {
       } else {
         final ProducerRecord<String, String> bid = bid();
         producer.send(bid);
-
       }
 
       events++;
-      try {
-        Thread.sleep(500);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+      limiter.acquire();
     }
   }
 

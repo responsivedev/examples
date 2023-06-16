@@ -1,5 +1,4 @@
 import json
-import os
 
 import pulumi
 import pulumi_aws as aws
@@ -12,11 +11,11 @@ POLICY = """
 apiVersion: "application.responsive.dev/v1"
 kind: "ResponsivePolicy"
 metadata:
-  name: example-app
+  name: example
   namespace: responsive
 spec:
   applicationNamespace: responsive
-  applicationName: example-app
+  applicationName: example
   status: POLICY_STATUS_MANAGED
   policyType: DEMO
   demoPolicy:
@@ -199,6 +198,14 @@ deployment = k8s.apps.v1.Deployment(
             k8s.core.v1.EnvVarArgs(
               name="RESPONSIVE_CLIENT_SECRET",
               value=config.get_secret("responsiveClientSecret")
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="API_KEY",
+              value=config.get_secret("apiKey")
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="API_SECRET",
+              value=config.get_secret("apiSecret")
             ),
             k8s.core.v1.EnvVarArgs(
               name="CONTROLLER_ENDPOINT",

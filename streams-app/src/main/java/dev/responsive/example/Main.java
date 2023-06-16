@@ -16,6 +16,7 @@
 
 package dev.responsive.example;
 
+import com.google.common.util.concurrent.RateLimiter;
 import dev.responsive.kafka.api.ResponsiveDriver;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +38,7 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 
+@SuppressWarnings("UnstableApiUsage")
 public class Main {
 
   public static void main(final String[] args) throws Exception {
@@ -85,8 +87,13 @@ public class Main {
     // schema for people is key: <person_id> value: <person_id, name, state>
     final KTable<String, String> people = builder.table("people", driver.materialized("people"));
 
+    final RateLimiter limiter = RateLimiter.create(1000);
     bids
         // person_id is 3rd column
+        .mapValues((k, v) -> {
+          limiter.acquire();
+          return v;
+        })
         .selectKey((k, v) -> v.split(",")[2])
         // schema is now <bid_id, amount, person_id, name, state>
         .join(people, (bid, person) -> bid + person)

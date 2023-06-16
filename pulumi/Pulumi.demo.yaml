@@ -1,5 +1,9 @@
 config:
   aws:region: us-west-2
+  responsive-demo:apiKey:
+    secure: AAABAFEwHbqP+MVopUHc2+PXGz8+4KADN+npohF9S0S/vANdbCuka7e/xGabF3AL1V5DyQQe8FdJxEwgGElKzdznTaevRkKXSJezfQ==
+  responsive-demo:apiSecret:
+    secure: AAABAGZ8FxHP4kB8FhBp09ZpWUi/Go0DZhlZ8q8VX41jCY29uxW5dgMm1JcbbYn8wkwb2Gwd1W/K3mBs4zacCBEG++6HDULFTR7+4w==
   responsive-demo:kafkaSaslJaasConfig:
     secure: AAABAAeFd+bKZZpyncVJ7tlmjylyKS4M0MBNTYUgFWX4CdZUHmv4xIbcfxQQSK18SW0wP+r7Q2XJAK3KRzwofK1ax2QuVKM5VcGvi+qRA4Wpsuw8VYxAzYHgJMBg4i0XooCZUPyf5TJyBQrw5q4mz7QG9X3LEPyS7QLzHD5XlXDh9PRsXKPTSDiyMS0MNXtUofR9p6IkYUSDXNAzwxnv43q8t8wLuyUrUmf5XLizEdS7ag2CNshpDEwA6SiPLjiDCWq7Lhrx5rHV
   responsive-demo:responsiveClientSecret:
