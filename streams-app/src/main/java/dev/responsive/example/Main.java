@@ -49,13 +49,12 @@ import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.TimestampedKeyValueStore;
 import org.apache.kafka.streams.state.ValueAndTimestamp;
-import org.apache.kafka.streams.state.internals.TimestampedKeyValueStoreBuilder;
 
 public class Main {
 
   public static final String INPUT_TOPIC = "input";
   public static final String DELETES_TOPIC = "input-deletes";
-  public static final String OUTPUT_TOPIC = "input-deletes";
+  public static final String OUTPUT_TOPIC = "output";
 
   private static final String STATE_STORE = "state-store";
 
@@ -117,11 +116,10 @@ public class Main {
             .to(OUTPUT_TOPIC));
 
     builder.addStateStore(
-        new TimestampedKeyValueStoreBuilder<String, String>(
-            driver.timestampedKv(STATE_STORE),
+        driver.timestampedKeyValueStoreBuilder(
+            STATE_STORE,
             new StringSerde(),
-            new StringSerde(),
-            new SystemTime()
+            new StringSerde()
         )
     );
     input.split()

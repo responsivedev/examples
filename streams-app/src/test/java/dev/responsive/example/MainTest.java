@@ -20,6 +20,7 @@ import dev.responsive.kafka.api.StreamsStoreDriver;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes.StringSerde;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -31,7 +32,9 @@ import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.TimestampedKeyValueStore;
 import org.apache.kafka.streams.state.WindowBytesStoreSupplier;
 import org.apache.kafka.streams.state.WindowStore;
 import org.apache.kafka.streams.test.TestRecord;
@@ -57,6 +60,12 @@ public class MainTest {
       @Override
       public KeyValueBytesStoreSupplier timestampedKv(final String name) {
         return Stores.persistentTimestampedKeyValueStore(name);
+      }
+
+      @Override
+      public <K, V> StoreBuilder<TimestampedKeyValueStore<K, V>> timestampedKeyValueStoreBuilder(
+          final String name, final Serde<K> keySerde, final Serde<V> valueSerde) {
+        return Stores.timestampedKeyValueStoreBuilder(timestampedKv(name), keySerde, valueSerde);
       }
 
       @Override
