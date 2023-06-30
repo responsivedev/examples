@@ -16,8 +16,8 @@
 
 package dev.responsive.example;
 
-import com.google.common.util.concurrent.RateLimiter;
 import dev.responsive.kafka.api.ResponsiveDriver;
+import dev.responsive.kafka.api.StreamsStoreDriver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -31,27 +31,46 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
+import org.apache.kafka.common.serialization.Serdes.StringSerde;
+import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Named;
+import org.apache.kafka.streams.kstream.Predicate;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
+import org.apache.kafka.streams.processor.api.FixedKeyRecord;
+import org.apache.kafka.streams.processor.api.Processor;
+import org.apache.kafka.streams.processor.api.ProcessorContext;
+import org.apache.kafka.streams.processor.api.Record;
+import org.apache.kafka.streams.state.TimestampedKeyValueStore;
+import org.apache.kafka.streams.state.ValueAndTimestamp;
+import org.apache.kafka.streams.state.internals.TimestampedKeyValueStoreBuilder;
 
-@SuppressWarnings("UnstableApiUsage")
 public class Main {
 
+  public static final String INPUT_TOPIC = "input";
+  public static final String DELETES_TOPIC = "input-deletes";
+  public static final String OUTPUT_TOPIC = "input-deletes";
+
+  private static final String STATE_STORE = "state-store";
+
   public static void main(final String[] args) throws Exception {
-    // TODO(agavra): update the ResponsiveDriver to accept Properties files
     final Properties props = loadConfig();
     props.put("sasl.jaas.config", System.getenv("SASL_JAAS_CONFIG"));
     props.put("responsive.client.secret", System.getenv("RESPONSIVE_CLIENT_SECRET"));
+    props.put("responsive.client.id", System.getenv("RESPONSIVE_CLIENT_ID"));
 
     final Admin admin = Admin.create(props);
     try {
       admin.createTopics(List.of(
-          new NewTopic("people", Optional.of(2), Optional.empty()),
-          new NewTopic("bids", Optional.of(2), Optional.empty())
+          new NewTopic(INPUT_TOPIC, Optional.of(4), Optional.empty()),
+          new NewTopic(DELETES_TOPIC, Optional.of(4), Optional.empty()),
+          new NewTopic(OUTPUT_TOPIC, Optional.of(2), Optional.empty())
       ));
     } catch (final UnknownTopicOrPartitionException ignored) {
     }
@@ -79,27 +98,35 @@ public class Main {
     streams.start();
   }
 
-  static Topology topology(final ResponsiveDriver driver) {
+  static Topology topology(final StreamsStoreDriver driver) {
     final StreamsBuilder builder = new StreamsBuilder();
+    final KStream<String, String> input = builder.stream(List.of(INPUT_TOPIC, DELETES_TOPIC));
 
-    // schema for bids is key: <bid_id> value: <bid_id, amount, person_id>
-    final KStream<String, String> bids = builder.stream("bids");
-    // schema for people is key: <person_id> value: <person_id, name, state>
-    final KTable<String, String> people = builder.table("people", driver.materialized("people"));
+    final Predicate<String, String> expirationPredicate = (key, value) -> value == null;
+    final Branched<String, String> expirationBranch = Branched.withConsumer(
+        expirationStream -> expirationStream.process(
+            ExpiredEventProcessor::new,
+            Named.as("expiration-processor"),
+            STATE_STORE));
 
-    final RateLimiter limiter = RateLimiter.create(1000);
-    bids
-        // person_id is 3rd column
-        .mapValues((k, v) -> {
-          limiter.acquire();
-          return v;
-        })
-        .selectKey((k, v) -> v.split(",")[2])
-        // schema is now <bid_id, amount, person_id, name, state>
-        .join(people, (bid, person) -> bid + person)
-        // state is the 5th column
-        .filter((k, v) -> v.split(",")[4].equals("CA"))
-        .to("output");
+    final Branched<String, String> dedupe = Branched.withConsumer(
+        eventStream -> eventStream.processValues(
+            DedupeProcessor::new,
+            Named.as("dedupe-processor"),
+            STATE_STORE)
+            .to(OUTPUT_TOPIC));
+
+    builder.addStateStore(
+        new TimestampedKeyValueStoreBuilder<String, String>(
+            driver.timestampedKv(STATE_STORE),
+            new StringSerde(),
+            new StringSerde(),
+            new SystemTime()
+        )
+    );
+    input.split()
+        .branch(expirationPredicate, expirationBranch)
+        .defaultBranch(dedupe);
 
     return builder.build();
   }
@@ -110,5 +137,51 @@ public class Main {
       cfg.load(inputStream);
     }
     return cfg;
+  }
+
+  private static class ExpiredEventProcessor implements Processor<String, String, String, String> {
+
+    TimestampedKeyValueStore<String, String> store;
+
+    @Override
+    public void init(final ProcessorContext<String, String> context) {
+      store = context.getStateStore(STATE_STORE);
+    }
+
+    @Override
+    public void process(final Record<String, String> record) {
+      // don't delete records that have only been in the store
+      // for less than 1 minute
+      final ValueAndTimestamp<String> valAndTs = store.get(record.key());
+      if (valAndTs == null || valAndTs.timestamp() + 30_000 < record.timestamp()) {
+        return;
+      }
+      store.delete(record.key());
+    }
+  }
+
+  private static class DedupeProcessor
+      implements FixedKeyProcessor<String, String, String> {
+
+    TimestampedKeyValueStore<String, String> store;
+    FixedKeyProcessorContext<String, String> context;
+
+    @Override
+    public void init(final FixedKeyProcessorContext<String, String> context) {
+      store = context.getStateStore(STATE_STORE);
+      this.context = context;
+    }
+
+    @Override
+    public void process(final FixedKeyRecord<String, String> record) {
+      final ValueAndTimestamp<String> seen = store.putIfAbsent(
+          record.key(),
+          ValueAndTimestamp.make("SEEN", context.currentStreamTimeMs())
+      );
+
+      if (seen == null) {
+        context.forward(record);
+      }
+    }
   }
 }

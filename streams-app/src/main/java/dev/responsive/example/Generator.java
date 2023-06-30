@@ -17,91 +17,50 @@
 package dev.responsive.example;
 
 import com.google.common.util.concurrent.RateLimiter;
+import java.util.HexFormat;
+import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
+@SuppressWarnings("UnstableApiUsage")
 public class Generator implements Runnable {
-
-  private static final String[] PEOPLE = new String[]{
-      "Alice",
-      "Bob",
-      "Carol",
-      "Dave"
-  };
-
-  private static final String[] STATES = new String[] {
-      "AZ",
-      "CA",
-      "CO",
-      "NY",
-      "MN",
-      "WI"
-  };
 
   private final Random random = new Random();
   private final KafkaProducer<String, String> producer;
-  private final AtomicLong bidId = new AtomicLong(0);
-  private final RateLimiter limiter = RateLimiter.create(1);
+  private final RateLimiter limiter;
 
   public Generator(final KafkaProducer<String, String> producer) {
     this.producer = producer;
+    final double generatorEventsPerSecond = Double.parseDouble(
+        Objects.requireNonNullElse(System.getenv("GENERATOR_EPS"), "500")
+    );
+    limiter = RateLimiter.create(generatorEventsPerSecond);
   }
 
   @Override
   public void run() {
-    // first populate all people
-    for (int i = 0; i < 100; i++) {
-      final ProducerRecord<String, String> person = person(i);
-      producer.send(person);
-    }
-
-    // now start generating events where every 10th event is a person
-    // update (e.g. moving state/changing name)
-    long events = 0;
     while (!Thread.currentThread().isInterrupted()) {
-      if (events % 10 == 0) {
-        final ProducerRecord<String, String> person = person();
-        producer.send(person);
+      // one out of 10 events will be an expiry event
+      final ProducerRecord<String, String> event;
+      if (random.nextInt(10) == 0) {
+        event = new ProducerRecord<>(Main.DELETES_TOPIC, key(), null);
       } else {
-        final ProducerRecord<String, String> bid = bid();
-        producer.send(bid);
+        event = new ProducerRecord<>(Main.INPUT_TOPIC, key(), value());
       }
-
-      events++;
+      producer.send(event);
       limiter.acquire();
     }
   }
 
-  private ProducerRecord<String, String> person() {
-    return person(random.nextInt(100));
+  private String key() {
+    return String.valueOf(random.nextInt(1_000_000));
   }
 
-  private ProducerRecord<String, String> person(final int i) {
-    // assume 100 distinct people
-    final String personId = String.valueOf(i);
-    return new ProducerRecord<>(
-        "people",
-        personId,
-        String.join(",",
-            personId,
-            PEOPLE[random.nextInt(PEOPLE.length)],
-            STATES[random.nextInt(STATES.length)]
-        )
-    );
+  private String value() {
+    byte[] bytes = new byte[32];
+    random.nextBytes(bytes);
+    return HexFormat.of().formatHex(bytes);
   }
 
-  private ProducerRecord<String, String> bid() {
-    final String bidId = String.valueOf(this.bidId.getAndIncrement());
-    return new ProducerRecord<>(
-        "bids",
-        bidId,
-        String.join(",",
-            bidId,
-            String.valueOf(random.nextInt(100)), // amount
-            String.valueOf(random.nextInt(100)) // person
-        )
-    );
-  }
 }

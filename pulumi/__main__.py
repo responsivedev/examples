@@ -196,6 +196,10 @@ deployment = k8s.apps.v1.Deployment(
               value=config.get_secret("kafkaSaslJaasConfig")
             ),
             k8s.core.v1.EnvVarArgs(
+              name="RESPONSIVE_CLIENT_ID",
+              value=config.get("responsiveClientId")
+            ),
+            k8s.core.v1.EnvVarArgs(
               name="RESPONSIVE_CLIENT_SECRET",
               value=config.get_secret("responsiveClientSecret")
             ),
@@ -206,6 +210,14 @@ deployment = k8s.apps.v1.Deployment(
             k8s.core.v1.EnvVarArgs(
               name="API_SECRET",
               value=config.get_secret("apiSecret")
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="GENERATOR_EPS",
+              value="500"
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="STREAMS_EPS",
+              value="500"
             ),
             k8s.core.v1.EnvVarArgs(
               name="CONTROLLER_ENDPOINT",
