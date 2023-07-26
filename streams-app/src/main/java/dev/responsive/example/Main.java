@@ -16,8 +16,9 @@
 
 package dev.responsive.example;
 
-import dev.responsive.kafka.api.ResponsiveDriver;
-import dev.responsive.kafka.api.StreamsStoreDriver;
+import dev.responsive.kafka.api.ResponsiveKafkaStreams;
+import dev.responsive.kafka.api.ResponsiveStores;
+import dev.responsive.kafka.store.ResponsiveStoreBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -32,10 +33,8 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.kafka.common.serialization.Serdes.StringSerde;
-import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.KStream;
@@ -47,6 +46,7 @@ import org.apache.kafka.streams.processor.api.FixedKeyRecord;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
+import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.TimestampedKeyValueStore;
 import org.apache.kafka.streams.state.ValueAndTimestamp;
 
@@ -67,8 +67,8 @@ public class Main {
     final Admin admin = Admin.create(props);
     try {
       admin.createTopics(List.of(
-          new NewTopic(INPUT_TOPIC, Optional.of(4), Optional.empty()),
-          new NewTopic(DELETES_TOPIC, Optional.of(4), Optional.empty()),
+          new NewTopic(INPUT_TOPIC, Optional.of(32), Optional.empty()),
+          new NewTopic(DELETES_TOPIC, Optional.of(32), Optional.empty()),
           new NewTopic(OUTPUT_TOPIC, Optional.of(2), Optional.empty())
       ));
     } catch (final UnknownTopicOrPartitionException ignored) {
@@ -80,24 +80,18 @@ public class Main {
     final Map<String, Object> config = new HashMap<>();
     props.forEach((k, v) -> config.put((String) k, v));
 
-    final ResponsiveDriver driver = ResponsiveDriver.connect(config);
-    final Topology topology = topology(driver);
-    final KafkaStreams streams = new KafkaStreams(topology, new StreamsConfig(config));
+    final Topology topology = topology();
+    final KafkaStreams streams = new KafkaStreams(topology, config);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      try {
-        executorService.shutdown();
-        streams.close();
-        driver.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      executorService.shutdown();
+      streams.close();
     }));
 
     streams.start();
   }
 
-  static Topology topology(final StreamsStoreDriver driver) {
+  static Topology topology() {
     final StreamsBuilder builder = new StreamsBuilder();
     final KStream<String, String> input = builder.stream(List.of(INPUT_TOPIC, DELETES_TOPIC));
 
@@ -113,14 +107,16 @@ public class Main {
             DedupeProcessor::new,
             Named.as("dedupe-processor"),
             STATE_STORE)
+            .filter((k, v) -> k.startsWith("aa")) // reduce kafka writes
             .to(OUTPUT_TOPIC));
 
     builder.addStateStore(
-        driver.timestampedKeyValueStoreBuilder(
-            STATE_STORE,
-            new StringSerde(),
-            new StringSerde()
-        )
+        new ResponsiveStoreBuilder<>(
+            Stores.timestampedKeyValueStoreBuilder(
+                ResponsiveStores.keyValueStore(STATE_STORE),
+                new StringSerde(),
+                new StringSerde()),
+            true)
     );
     input.split()
         .branch(expirationPredicate, expirationBranch)

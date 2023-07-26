@@ -1,10 +1,10 @@
 config:
   responsive-demo:apiKey:
-    secure: AAABAKv4W/Q5hPgyBPFXadK+nsc+IVHFBwzBcKDI77FQJnADND+SB4gWinGRAYkfXCjKQHMBRf5qqijjpKSHQi/fVy2EjLIHOarfxg==
+    secure: AAABAMD5iVMdG3/uFriNB38UvDApUpq+LzHAEcR4qfld/rlQwztA0bysL8w3/GhIRS591wL3/UzK5Vnr8dJjICB3FAlnN9ESKAxpbQ==
   responsive-demo:apiSecret:
-    secure: AAABABdWoynJn7MYfiFXv7zOjPh1zQw+ZM9nVaeaxeHi6gnuW+Kzhas3MWK6S2z5EQBk5P85SQda/cGKAMy6bQmigSGKPRF3Mh7vCA==
+    secure: AAABAOuLeebCJdLI6maZk292OsUeFNFq2f7oYwtB78bG/Pl0rJVIh1SRjYA3/pi+jdVmr6fyzkuR0g/7p2QRmIazvtHk8JNEG3s9Yw==
   responsive-demo:kafkaSaslJaasConfig:
-    secure: AAABALBlUB4WR5o32tgru7FCN8LKgbNWE3SFVqqt7B8gZmrHGbpDPGJFlmC1PnBc7/FmOgqDm+BQMhb85dzdgzOmc1cf/8xPXtwtvOgipFK9PDH3AXG/srFjo4mwE0jQPZeCCqJ85jXG4CY6+MSSq7thhD3HN0+nPcf0Cr+6P5ANT9JHS14FEYhZPE1nLrnJ4ANouxh0u/mgY9WTylDmFn/oc/XTKUC5ZYK8bnmwLT74XhBu6bLnAxrXafzp9W3o0Yl/7dzSe08Rw28ajtpvCY9xgZNbPmHAMC8=
+    secure: AAABAO0pTLYhcm1krgu2fVwxMIlqEJJtPpd3I/QtSTeAUgbf/pmGKEGIwr9vnQ8jFWVxTAaVCFPGXMbjYg4vpfMJu0AObNaxp+9Kwsoo4JQXbCvk/3uaPrVAb8RAcZPwBC9c4HVn78+ykZ40FGtsHL8u1zQLFBS2X4OqhIwFtzGigtQamuKE/ls1Q6xHOIIA7r5glBHaq3Uspboo14pcSwPHKYid63QPoXGsiSVZE9luCW+mppznbjogcB6IC8Iq4irW3tEURa8y
   responsive-demo:responsiveClientId: responsivedev
   responsive-demo:responsiveClientSecret:
-    secure: AAABADl9IGjDZUPGYaF1rNsvGJ5Icor+VhZbgPU46VTonGBkXTq7yuMfLvVu9rqIo5/IYGXbEYzseqtacbUv5NpuZRHNsUYCDBBX8w==
+    secure: AAABAOq5W9EvWFFUqz8iDWCyF8dvAFjFwPlYZ8vbjvbcM3VICG6VBnTepwniI5RkThi+ycjWPjgQv8K7nbh9QpmbymezqVgVpSH5BQ==

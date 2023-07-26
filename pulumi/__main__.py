@@ -103,10 +103,10 @@ eks_cluster = eks.Cluster(
   # Private subnets will be used for cluster nodes
   private_subnet_ids=eks_vpc.private_subnet_ids,
   # Change configuration values to change any of the following settings
-  instance_type="t3.medium",
-  desired_capacity=2,
-  min_size=2,
-  max_size=3,
+  instance_type="m5.large",
+  desired_capacity=1,
+  min_size=1,
+  max_size=2,
   # Do not give worker nodes a public IP address
   node_associate_public_ip_address=False,
   create_oidc_provider=True,
@@ -157,11 +157,13 @@ namespace = pulumi_kubernetes.core.v1.Namespace(
   opts=pulumi.ResourceOptions(provider=eks_provider),
 )
 
+"""
 k8s.yaml.ConfigGroup(
   "example-policy",
   yaml=[POLICY],
   opts=pulumi.ResourceOptions(provider=eks_provider)
 )
+"""
 
 deployment = k8s.apps.v1.Deployment(
   "ExampleDeployment",
@@ -213,15 +215,15 @@ deployment = k8s.apps.v1.Deployment(
             ),
             k8s.core.v1.EnvVarArgs(
               name="GENERATOR_EPS",
-              value="500"
+              value="1000"
             ),
             k8s.core.v1.EnvVarArgs(
               name="STREAMS_EPS",
-              value="500"
+              value="1000000"
             ),
             k8s.core.v1.EnvVarArgs(
               name="CONTROLLER_ENDPOINT",
-              value="https://example.ctl.us-west-2.aws.cloud.responsive.dev"),
+              value="https://rohantest.ctl.us-west-2.aws.cloud.responsive.dev"),
             k8s.core.v1.EnvVarArgs(
               name="POD_IP",
               value_from=k8s.core.v1.EnvVarSourceArgs(

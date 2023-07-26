@@ -18,7 +18,6 @@ package dev.responsive.example;
 
 import com.google.common.util.concurrent.RateLimiter;
 import java.util.HexFormat;
-import java.util.Objects;
 import java.util.Random;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -32,29 +31,25 @@ public class Generator implements Runnable {
 
   public Generator(final KafkaProducer<String, String> producer) {
     this.producer = producer;
-    final double generatorEventsPerSecond = Double.parseDouble(
-        Objects.requireNonNullElse(System.getenv("GENERATOR_EPS"), "500")
-    );
+    final double generatorEventsPerSecond = 10;
     limiter = RateLimiter.create(generatorEventsPerSecond);
   }
 
   @Override
   public void run() {
     while (!Thread.currentThread().isInterrupted()) {
-      // one out of 10 events will be an expiry event
       final ProducerRecord<String, String> event;
-      if (random.nextInt(10) == 0) {
-        event = new ProducerRecord<>(Main.DELETES_TOPIC, key(), null);
-      } else {
-        event = new ProducerRecord<>(Main.INPUT_TOPIC, key(), value());
-      }
+      event = new ProducerRecord<>(Main.INPUT_TOPIC, key(), value());
       producer.send(event);
       limiter.acquire();
     }
   }
 
   private String key() {
-    return String.valueOf(random.nextInt(1_000_000));
+    // generate very few collisions
+    byte[] bytes = new byte[256];
+    random.nextBytes(bytes);
+    return HexFormat.of().formatHex(bytes);
   }
 
   private String value() {
