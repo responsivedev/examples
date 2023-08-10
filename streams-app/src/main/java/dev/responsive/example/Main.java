@@ -81,7 +81,7 @@ public class Main {
     props.forEach((k, v) -> config.put((String) k, v));
 
     final Topology topology = topology();
-    final KafkaStreams streams = new KafkaStreams(topology, config);
+    final KafkaStreams streams = ResponsiveKafkaStreams.create(topology, config);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       executorService.shutdown();
@@ -113,7 +113,7 @@ public class Main {
     builder.addStateStore(
         new ResponsiveStoreBuilder<>(
             Stores.timestampedKeyValueStoreBuilder(
-                ResponsiveStores.keyValueStore(STATE_STORE),
+                ResponsiveStores.timestampedFactStore(STATE_STORE),
                 new StringSerde(),
                 new StringSerde()),
             true)

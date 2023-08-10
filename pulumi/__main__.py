@@ -104,9 +104,9 @@ eks_cluster = eks.Cluster(
   private_subnet_ids=eks_vpc.private_subnet_ids,
   # Change configuration values to change any of the following settings
   instance_type="m5.large",
-  desired_capacity=1,
+  desired_capacity=2,
   min_size=1,
-  max_size=2,
+  max_size=3,
   # Do not give worker nodes a public IP address
   node_associate_public_ip_address=False,
   create_oidc_provider=True,
