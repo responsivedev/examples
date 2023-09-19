@@ -29,4 +29,4 @@ if [ ! -z "$CONTROLLER_ENDPOINT" ]; then
   "
 fi
 
-java ${EXPORTER_OPTS} -cp @/app/jib-classpath-file dev.responsive.example.Main
+java ${EXPORTER_OPTS} -cp @/app/jib-classpath-file dev.responsive.example.Main ${MODE}

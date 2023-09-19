@@ -40,7 +40,7 @@ public class MainTest {
         StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, StringSerde.class,
         StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, StringSerde.class
     ));
-    TopologyTestDriver testDriver = new TopologyTestDriver(Main.topology(), props);
+    TopologyTestDriver testDriver = new TopologyTestDriver(Main.topology(null), props);
 
     final TestInputTopic<String, String> inputTopic = testDriver.createInputTopic(Main.INPUT_TOPIC,
         new StringSerializer(), new StringSerializer());

@@ -16,6 +16,7 @@
 
 package dev.responsive.example;
 
+import com.google.common.util.concurrent.RateLimiter;
 import dev.responsive.kafka.api.ResponsiveKafkaStreams;
 import dev.responsive.kafka.api.ResponsiveStores;
 import dev.responsive.kafka.store.ResponsiveStoreBuilder;
@@ -56,13 +57,24 @@ public class Main {
   public static final String DELETES_TOPIC = "input-deletes";
   public static final String OUTPUT_TOPIC = "output";
 
-  private static final String STATE_STORE = "state-store";
+  private static final String STATE_STORE = "state-store-2";
+
+  private static Integer parseEnv(final String name) {
+    final var value = System.getenv(name);
+    if (value == null || value.equals("")) {
+      return null;
+    }
+    return Integer.parseInt(value);
+  }
 
   public static void main(final String[] args) throws Exception {
     final Properties props = loadConfig();
     props.put("sasl.jaas.config", System.getenv("SASL_JAAS_CONFIG"));
-    props.put("responsive.client.secret", System.getenv("RESPONSIVE_CLIENT_SECRET"));
-    props.put("responsive.client.id", System.getenv("RESPONSIVE_CLIENT_ID"));
+    //props.put("responsive.client.secret", System.getenv("RESPONSIVE_CLIENT_SECRET"));
+    //props.put("responsive.client.id", System.getenv("RESPONSIVE_CLIENT_ID"));
+    System.out.println("RDT Properties 2 : " + props);
+    final Integer generatorEps = parseEnv("GENERATOR_EPS");
+    final Integer eps = parseEnv("STREAMS_EPS");
 
     final Admin admin = Admin.create(props);
     try {
@@ -75,37 +87,47 @@ public class Main {
     }
 
     final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    executorService.submit(new Generator(new KafkaProducer<>(props)));
+    final KafkaStreams streams;
+    final String mode = args[0];
+    if (mode.equals("generator")) {
+      executorService.submit(new Generator(generatorEps, new KafkaProducer<>(props)));
+      streams = null;
+    } else {
+      final Map<String, Object> config = new HashMap<>();
+      props.forEach((k, v) -> config.put((String) k, v));
 
-    final Map<String, Object> config = new HashMap<>();
-    props.forEach((k, v) -> config.put((String) k, v));
-
-    final Topology topology = topology();
-    final KafkaStreams streams = ResponsiveKafkaStreams.create(topology, config);
+      final Topology topology = topology(eps);
+      streams = ResponsiveKafkaStreams.create(topology, config);
+    }
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       executorService.shutdown();
-      streams.close();
+      if (streams != null) {
+        streams.close();
+      }
     }));
 
-    streams.start();
+    if (streams != null) {
+      streams.start();
+    }
   }
 
-  static Topology topology() {
+  static Topology topology(Integer eps) {
     final StreamsBuilder builder = new StreamsBuilder();
     final KStream<String, String> input = builder.stream(List.of(INPUT_TOPIC, DELETES_TOPIC));
-
+    final RateLimiter limiter = RateLimiter.create(eps == null ? Integer.MAX_VALUE : eps.doubleValue());
     final Predicate<String, String> expirationPredicate = (key, value) -> value == null;
+
     final Branched<String, String> expirationBranch = Branched.withConsumer(
         expirationStream -> expirationStream.process(
             ExpiredEventProcessor::new,
-            Named.as("expiration-processor"),
+            Named.as("expiration-processor-2"),
             STATE_STORE));
 
     final Branched<String, String> dedupe = Branched.withConsumer(
         eventStream -> eventStream.processValues(
             DedupeProcessor::new,
-            Named.as("dedupe-processor"),
+            Named.as("dedupe-processor-2"),
             STATE_STORE)
             .filter((k, v) -> k.startsWith("aa")) // reduce kafka writes
             .to(OUTPUT_TOPIC));
@@ -118,7 +140,8 @@ public class Main {
                 new StringSerde()),
             true)
     );
-    input.split()
+    input.peek((a, b) -> limiter.acquire())
+        .split()
         .branch(expirationPredicate, expirationBranch)
         .defaultBranch(dedupe);
 
@@ -130,6 +153,7 @@ public class Main {
     try (InputStream inputStream = Main.class.getResourceAsStream("/app.properties")) {
       cfg.load(inputStream);
     }
+    System.out.println("RDT Properties: " + cfg.toString());
     return cfg;
   }
 

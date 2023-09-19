@@ -25,28 +25,22 @@ spec:
 config = pulumi.Config()
 
 eks_vpc = awsx.ec2.Vpc(
-  "responsive-example-eks-vpc",
+  "rohan-test-eks-vpc",
   enable_dns_hostnames=True,
   number_of_availability_zones=2,
   cidr_block="10.0.0.0/16",
-  nat_gateways=awsx.ec2.NatGatewayConfigurationArgs(
-    strategy=awsx.ec2.NatGatewayStrategy.SINGLE),
+  nat_gateways=awsx.ec2.NatGatewayConfigurationArgs(strategy=awsx.ec2.NatGatewayStrategy.NONE),
   subnet_specs=[
     awsx.ec2.SubnetSpecArgs(
       type=awsx.ec2.SubnetType.PUBLIC,
-      cidr_mask=19,
-      name="public_frontend"
-    ),
-    awsx.ec2.SubnetSpecArgs(
-      type=awsx.ec2.SubnetType.PRIVATE,
       cidr_mask=18,
-      name="backend"
-    )
+      name="public",
+    ),
   ]
 )
 
 access_role = aws.iam.Role(
-  "responsive-example-eks-cluster-admin",
+  "rohan-test-eks-cluster-admin",
   assume_role_policy=json.dumps({
     "Version": "2012-10-17",
     "Statement": [
@@ -61,7 +55,7 @@ access_role = aws.iam.Role(
     ]
   }),
   tags={
-    "clusterAccess": "responsive-example-eks-cluster-admin-usr",
+    "clusterAccess": "rohan-test-eks-cluster-admin-usr",
   }
 )
 
@@ -95,20 +89,17 @@ for name, arn in attachments:
   )
 
 eks_cluster = eks.Cluster(
-  "responsive-example-eks-cluster",
+  "rohan-test-eks-cluster",
   # Put the cluster in the new VPC created earlier
   vpc_id=eks_vpc.vpc_id,
   # Public subnets will be used for load balancers
   public_subnet_ids=eks_vpc.public_subnet_ids,
-  # Private subnets will be used for cluster nodes
-  private_subnet_ids=eks_vpc.private_subnet_ids,
   # Change configuration values to change any of the following settings
   instance_type="m5.large",
-  desired_capacity=2,
+  desired_capacity=4,
   min_size=1,
-  max_size=3,
-  # Do not give worker nodes a public IP address
-  node_associate_public_ip_address=False,
+  max_size=4,
+  node_associate_public_ip_address=True,
   create_oidc_provider=True,
   endpoint_private_access=True,
   endpoint_public_access=True,
@@ -175,7 +166,6 @@ deployment = k8s.apps.v1.Deployment(
     namespace="responsive"
   ),
   spec=k8s.apps.v1.DeploymentSpecArgs(
-    replicas=1,
     selector=k8s.meta.v1.LabelSelectorArgs(
       match_labels={
         "app": "example",
@@ -190,8 +180,12 @@ deployment = k8s.apps.v1.Deployment(
       spec=k8s.core.v1.PodSpecArgs(
         containers=[k8s.core.v1.ContainerArgs(
           name="example" + "-container",
-          image="public.ecr.aws/j8q9y0n6/responsivedev/example-app",
+          image="public.ecr.aws/j8q9y0n6/responsivedev/example-app:rohan-policy-test-11",
           image_pull_policy="Always",
+          resources=k8s.core.v1.ResourceRequirementsArgs(
+            requests={"memory": "3Gi", "cpu": "700m"},
+            limits={"memory": "3Gi"}
+          ),
           env=[
             k8s.core.v1.EnvVarArgs(
               name="SASL_JAAS_CONFIG",
@@ -214,12 +208,16 @@ deployment = k8s.apps.v1.Deployment(
               value=config.get_secret("apiSecret")
             ),
             k8s.core.v1.EnvVarArgs(
+              name="MODE",
+              value="app"
+            ),
+            k8s.core.v1.EnvVarArgs(
               name="GENERATOR_EPS",
-              value="1000"
+              value="300"
             ),
             k8s.core.v1.EnvVarArgs(
               name="STREAMS_EPS",
-              value="1000000"
+              value="1000"
             ),
             k8s.core.v1.EnvVarArgs(
               name="CONTROLLER_ENDPOINT",
@@ -235,6 +233,64 @@ deployment = k8s.apps.v1.Deployment(
   ),
   opts=pulumi.ResourceOptions(provider=eks_provider)
 )
+
+
+generator = k8s.apps.v1.Deployment(
+  "GeneratorDeployment",
+  api_version="apps/v1",
+  kind="Deployment",
+  metadata=k8s.meta.v1.ObjectMetaArgs(
+    name="generator",
+    labels={"app": "generator"},
+    namespace="responsive"
+  ),
+  spec=k8s.apps.v1.DeploymentSpecArgs(
+    replicas=1,
+    selector=k8s.meta.v1.LabelSelectorArgs(
+      match_labels={
+        "app": "generator",
+      },
+    ),
+    template=k8s.core.v1.PodTemplateSpecArgs(
+      metadata=k8s.meta.v1.ObjectMetaArgs(
+        labels={
+          "app": "generator",
+        },
+      ),
+      spec=k8s.core.v1.PodSpecArgs(
+        containers=[k8s.core.v1.ContainerArgs(
+          name="example" + "-container",
+          image="public.ecr.aws/j8q9y0n6/responsivedev/example-app:rohan-policy-test-7",
+          image_pull_policy="Always",
+          resources=k8s.core.v1.ResourceRequirementsArgs(
+            requests={"memory": "3Gi", "cpu": "700m"},
+            limits={"memory": "3Gi"}
+          ),
+          env=[
+            k8s.core.v1.EnvVarArgs(
+              name="SASL_JAAS_CONFIG",
+              value=config.get_secret("kafkaSaslJaasConfig")
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="MODE",
+              value="generator"
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="GENERATOR_EPS",
+              value="300"
+            ),
+            k8s.core.v1.EnvVarArgs(
+              name="STREAMS_EPS",
+              value="1000"
+            ),
+          ],
+        )],
+      ),
+    ),
+  ),
+  opts=pulumi.ResourceOptions(provider=eks_provider)
+)
+
 
 # Export values to use elsewhere
 pulumi.export("kubeconfig", eks_cluster.kubeconfig)
