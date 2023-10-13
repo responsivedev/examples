@@ -2,5 +2,6 @@ pulumi>=3.0.0,<4.0.0
 pulumi-aws>=5.0.0,<6.0.0
 pulumi-awsx>=1.0.0,<2.0.0
 pulumi-eks>=1.0.0,<2.0.0
+pulumi-mongodbatlas>=3.0.0,<4.0.0
 requests
 boto3

@@ -17,10 +17,13 @@
 package dev.responsive.example;
 
 import dev.responsive.kafka.api.ResponsiveKafkaStreams;
-import dev.responsive.kafka.api.ResponsiveStores;
-import dev.responsive.kafka.store.ResponsiveStoreBuilder;
+import dev.responsive.kafka.api.config.ResponsiveConfig;
+import dev.responsive.kafka.api.config.StorageBackend;
+import dev.responsive.kafka.api.stores.ResponsiveKeyValueParams;
+import dev.responsive.kafka.api.stores.ResponsiveStores;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +66,7 @@ public class Main {
     props.put("sasl.jaas.config", System.getenv("SASL_JAAS_CONFIG"));
     props.put("responsive.client.secret", System.getenv("RESPONSIVE_CLIENT_SECRET"));
     props.put("responsive.client.id", System.getenv("RESPONSIVE_CLIENT_ID"));
+    props.put(ResponsiveConfig.STORAGE_BACKEND_TYPE_CONFIG, StorageBackend.MONGO_DB.name());
 
     final Admin admin = Admin.create(props);
     try {
@@ -81,7 +85,7 @@ public class Main {
     props.forEach((k, v) -> config.put((String) k, v));
 
     final Topology topology = topology();
-    final KafkaStreams streams = ResponsiveKafkaStreams.create(topology, config);
+    final KafkaStreams streams = new ResponsiveKafkaStreams(topology, config);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       executorService.shutdown();
@@ -111,12 +115,11 @@ public class Main {
             .to(OUTPUT_TOPIC));
 
     builder.addStateStore(
-        new ResponsiveStoreBuilder<>(
             Stores.timestampedKeyValueStoreBuilder(
-                ResponsiveStores.timestampedFactStore(STATE_STORE),
+                ResponsiveStores.keyValueStore(ResponsiveKeyValueParams.fact(STATE_STORE)
+                    .withTimeToLive(Duration.ofDays(30))),
                 new StringSerde(),
-                new StringSerde()),
-            true)
+                new StringSerde())
     );
     input.split()
         .branch(expirationPredicate, expirationBranch)

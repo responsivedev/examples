@@ -1,0 +1,15 @@
+config:
+  responsive-demo:apiKey:
+    secure: AAABALSQcqpKLLiNCSJ91BoT6BHriOrpGIXbOXW5aBlnlnfo9auYAFDdf9NKq2Nw0adXpemXglKAezmYB6VvfYLgB7/TnDuj9Kjk2g==
+  responsive-demo:apiSecret:
+    secure: AAABAMqlDG7OZW8cNE+VOWOH+8As4eh+eiCEh/oNoQ5EoNeZcbEAIUTj/WaZ/xansaXA4ErgGotdCZt9qjoWiNls27z8vATg6Yu1Vg==
+  responsive-demo:atlas_private_key:
+    secure: AAABAMhiQ+k8C1/cleJfKYZE4YMn4nw/h4E+vwehPj+XvkKmWzYT8cBkS8mOabFARm3zyTQySIxMcSu5SpGGUVQGI3Q=
+  responsive-demo:atlas_public_key:
+    secure: AAABAALY5OM9/QtggMIf4sqYeLOcPLbk7QfY3sERaEwaFksSQK59Ew==
+  responsive-demo:kafkaSaslJaasConfig:
+    secure: AAABAEXVaqHhYRD0kxJNpikwoc/uQncfk/0mwBh3iHsub5s8w0mUhDmhZcpgWPEwRVqpKT6t2HmKb1zjr2+caa3roiE/oRoNWEB0AoSjxeb1LwenXXKaXWZQUe3G5eCVH9x3yw8rCyZnfX5sjCYFJNKw8IxzpgtAq6T5CU2U6JNzljrUbdcxox+3WpMrvOWBwf7XyGfhJ9aYNKmaIQdTN0oBLSeIUvllAddx6HRQAGQQqtZrvjewNYv97a4gfJ36Kbgj3ZUCgIlP
+  responsive-demo:responsiveClientId:
+    secure: AAABAAcNmfE+CkMDHRjDU+Ejndi+yxQK2rsre9ecqgje9fZrFounN1Hz
+  responsive-demo:responsiveClientSecret:
+    secure: AAABAKVHMTsy8jCPuUhxFu7xkGQfXRP2xPMfly3pGsfrWpSknf/bVMZE6hknBu/8

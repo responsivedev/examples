@@ -6,6 +6,8 @@ import pulumi_awsx as awsx
 import pulumi_eks as eks
 import pulumi_kubernetes
 import pulumi_kubernetes as k8s
+import pulumi_mongodbatlas as mongo
+
 
 POLICY = """
 apiVersion: "application.responsive.dev/v1"
@@ -54,7 +56,7 @@ access_role = aws.iam.Role(
         "Sid": "",
         "Effect": "Allow",
         "Principal": {
-          "AWS": "arn:aws:iam::292505934682:root"
+          "AWS": "arn:aws:iam::083511421557:root"
         },
         "Action": "sts:AssumeRole"
       }
@@ -149,6 +151,36 @@ k8s_admin_role_binding = k8s.rbac.v1.ClusterRoleBinding(
   opts=pulumi.ResourceOptions(provider=eks_provider),
 )
 
+# Deploy MongoDB
+
+# MongoDB Atlas Public Key and Private Key from the environment variables
+public_key = pulumi.Config().require_secret("atlas_public_key")
+private_key = pulumi.Config().require_secret("atlas_private_key")
+
+# Create a MongoDB Atlas provider
+atlas_provider = mongo.Provider(
+  "atlas_provider",
+  public_key=public_key,
+  private_key=private_key,
+)
+
+atlas_project = mongo.Project(
+  'Example Project',
+  org_id='652582b1bd2f2e46ac5e0e0e',
+  name='Example',
+  opts=pulumi.ResourceOptions(provider=atlas_provider)
+)
+atlas_instance = mongo.ServerlessInstance(
+  'Example Instance',
+  project_id=atlas_project.id,
+  provider_settings_backing_provider_name='AWS',
+  provider_settings_provider_name='SERVERLESS',
+  provider_settings_region_name='US_WEST_2',
+  name='ExampleInstance',
+  opts=pulumi.ResourceOptions(provider=atlas_provider)
+)
+
+
 # Deploy the services running on k8s
 
 namespace = pulumi_kubernetes.core.v1.Namespace(
@@ -190,7 +222,7 @@ deployment = k8s.apps.v1.Deployment(
       spec=k8s.core.v1.PodSpecArgs(
         containers=[k8s.core.v1.ContainerArgs(
           name="example" + "-container",
-          image="public.ecr.aws/j8q9y0n6/responsivedev/example-app",
+          image="public.ecr.aws/x3k6i9w2/responsivedev/example-app",
           image_pull_policy="Always",
           env=[
             k8s.core.v1.EnvVarArgs(
@@ -245,3 +277,5 @@ cmd = pulumi.Output.all(eks_cluster.eks_cluster.name, access_role.arn).apply(
   lambda l: f"aws eks update-kubeconfig --name {l[0]} --role-arn {l[1]}"
 )
 pulumi.export("updateKubeCmd", cmd)
+pulumi.export('atlas_project_id', atlas_project.id)
+pulumi.export('atlas_instance_id', atlas_instance.id)
