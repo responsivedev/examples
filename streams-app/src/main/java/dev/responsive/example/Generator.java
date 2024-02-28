@@ -31,7 +31,7 @@ public class Generator implements Runnable {
 
   public Generator(final KafkaProducer<String, String> producer) {
     this.producer = producer;
-    final double generatorEventsPerSecond = 10;
+    final double generatorEventsPerSecond = 100;
     limiter = RateLimiter.create(generatorEventsPerSecond);
   }
 

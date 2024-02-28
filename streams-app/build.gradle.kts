@@ -49,13 +49,11 @@ repositories {
 
 dependencies {
     implementation("org.apache.kafka", "kafka-streams", "3.5.0")
-    implementation("dev.responsive", "kafka-client", "0.8.0-SNAPSHOT")
+    implementation("dev.responsive", "kafka-client", "0.18.0")
     implementation("org.slf4j:slf4j-log4j12:2.0.5")
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("io.opentelemetry.javaagent:opentelemetry-javaagent:1.25.0")
-    implementation("com.google.guava:guava:31.1-jre")
-
-    implementation("com.scylladb:java-driver-core:4.15.0.0")
+    implementation("com.google.guava:guava:33.0.0-jre")
 
     testImplementation("dev.responsive:responsive-test-utils:0.5.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
