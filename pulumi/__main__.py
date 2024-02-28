@@ -6,23 +6,7 @@ import pulumi_awsx as awsx
 import pulumi_eks as eks
 import pulumi_kubernetes
 import pulumi_kubernetes as k8s
-import pulumi_mongodbatlas as mongo
 
-
-POLICY = """
-apiVersion: "application.responsive.dev/v1"
-kind: "ResponsivePolicy"
-metadata:
-  name: example
-  namespace: responsive
-spec:
-  applicationNamespace: responsive
-  applicationName: example
-  status: POLICY_STATUS_MANAGED
-  policyType: DEMO
-  demoPolicy:
-    maxReplicas: 2
-"""
 
 config = pulumi.Config()
 
@@ -151,36 +135,6 @@ k8s_admin_role_binding = k8s.rbac.v1.ClusterRoleBinding(
   opts=pulumi.ResourceOptions(provider=eks_provider),
 )
 
-# Deploy MongoDB
-
-# MongoDB Atlas Public Key and Private Key from the environment variables
-public_key = pulumi.Config().require_secret("atlas_public_key")
-private_key = pulumi.Config().require_secret("atlas_private_key")
-
-# Create a MongoDB Atlas provider
-atlas_provider = mongo.Provider(
-  "atlas_provider",
-  public_key=public_key,
-  private_key=private_key,
-)
-
-atlas_project = mongo.Project(
-  'Example Project',
-  org_id='652582b1bd2f2e46ac5e0e0e',
-  name='Example',
-  opts=pulumi.ResourceOptions(provider=atlas_provider)
-)
-atlas_instance = mongo.ServerlessInstance(
-  'Example Instance',
-  project_id=atlas_project.id,
-  provider_settings_backing_provider_name='AWS',
-  provider_settings_provider_name='SERVERLESS',
-  provider_settings_region_name='US_WEST_2',
-  name='ExampleInstance',
-  opts=pulumi.ResourceOptions(provider=atlas_provider)
-)
-
-
 # Deploy the services running on k8s
 
 namespace = pulumi_kubernetes.core.v1.Namespace(
@@ -189,15 +143,7 @@ namespace = pulumi_kubernetes.core.v1.Namespace(
   opts=pulumi.ResourceOptions(provider=eks_provider),
 )
 
-"""
-k8s.yaml.ConfigGroup(
-  "example-policy",
-  yaml=[POLICY],
-  opts=pulumi.ResourceOptions(provider=eks_provider)
-)
-"""
-
-deployment = k8s.apps.v1.Deployment(
+app_deployment = k8s.apps.v1.Deployment(
   "ExampleDeployment",
   api_version="apps/v1",
   kind="Deployment",
@@ -226,42 +172,117 @@ deployment = k8s.apps.v1.Deployment(
           image_pull_policy="Always",
           env=[
             k8s.core.v1.EnvVarArgs(
-              name="SASL_JAAS_CONFIG",
-              value=config.get_secret("kafkaSaslJaasConfig")
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="RESPONSIVE_CLIENT_ID",
-              value=config.get("responsiveClientId")
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="RESPONSIVE_CLIENT_SECRET",
-              value=config.get_secret("responsiveClientSecret")
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="API_KEY",
-              value=config.get_secret("apiKey")
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="API_SECRET",
-              value=config.get_secret("apiSecret")
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="GENERATOR_EPS",
-              value="1000"
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="STREAMS_EPS",
-              value="1000000"
-            ),
-            k8s.core.v1.EnvVarArgs(
-              name="CONTROLLER_ENDPOINT",
-              value="https://rohantest.ctl.us-west-2.aws.cloud.responsive.dev"),
-            k8s.core.v1.EnvVarArgs(
               name="POD_IP",
               value_from=k8s.core.v1.EnvVarSourceArgs(
                 field_ref=k8s.core.v1.ObjectFieldSelectorArgs(field_path="status.podIP"))),
           ],
         )],
+      ),
+    ),
+  ),
+  opts=pulumi.ResourceOptions(provider=eks_provider)
+)
+
+gen_deployment = k8s.apps.v1.Deployment(
+  "GeneratorDeployment",
+  api_version="apps/v1",
+  kind="Deployment",
+  metadata=k8s.meta.v1.ObjectMetaArgs(
+    name="generator",
+    labels={"app": "generator"},
+    namespace="responsive"
+  ),
+  spec=k8s.apps.v1.DeploymentSpecArgs(
+    replicas=1,
+    selector=k8s.meta.v1.LabelSelectorArgs(
+      match_labels={
+        "app": "generator",
+      },
+    ),
+    template=k8s.core.v1.PodTemplateSpecArgs(
+      metadata=k8s.meta.v1.ObjectMetaArgs(
+        labels={
+          "app": "generator",
+        },
+      ),
+      spec=k8s.core.v1.PodSpecArgs(
+        containers=[k8s.core.v1.ContainerArgs(
+          name="generator" + "-container",
+          image="public.ecr.aws/x3k6i9w2/responsivedev/example-app",
+          image_pull_policy="Always",
+          env=[
+            k8s.core.v1.EnvVarArgs(
+              name="ARGS",
+              value="--generator"
+          )],
+        )],
+      ),
+    ),
+  ),
+  opts=pulumi.ResourceOptions(provider=eks_provider)
+)
+
+with open('/Users/agavra/dev/responsive-example/streams-app/src/main/resources/bootstrap.properties', 'r') as file:
+    file_content = file.read()
+
+config_map = k8s.core.v1.ConfigMap(
+    'bootstrap-configmap',
+    metadata=k8s.meta.v1.ObjectMetaArgs(
+        name='bootstrap-configmap',
+        namespace='responsive'
+    ),
+    data={
+        'bootstrap.properties': file_content
+    }
+)
+
+bootstrap_deployment = k8s.apps.v1.Deployment(
+  "BootstrapDeployment",
+  api_version="apps/v1",
+  kind="Deployment",
+  metadata=k8s.meta.v1.ObjectMetaArgs(
+    name="bootstrap",
+    labels={"app": "bootstrap"},
+    namespace="responsive"
+  ),
+  spec=k8s.apps.v1.DeploymentSpecArgs(
+    replicas=1,
+    selector=k8s.meta.v1.LabelSelectorArgs(
+      match_labels={
+        "app": "bootstrap",
+      },
+    ),
+    template=k8s.core.v1.PodTemplateSpecArgs(
+      metadata=k8s.meta.v1.ObjectMetaArgs(
+        labels={
+          "app": "bootstrap",
+        },
+      ),
+      spec=k8s.core.v1.PodSpecArgs(
+        containers=[k8s.core.v1.ContainerArgs(
+          name="bootstrap" + "-container",
+          image="public.ecr.aws/j8q9y0n6/responsiveinc/kafka-client-bootstrap:0.18.0",
+          image_pull_policy="Always",
+          env=[
+            k8s.core.v1.EnvVarArgs(
+              name="BOOTSTRAP_ARGS",
+              value="-propertiesFile /etc/config/bootstrap.properties -name COUNT -changelogTopic responsive-example-COUNT-changelog"
+           )],
+           volume_mounts=[
+               k8s.core.v1.VolumeMountArgs(
+                   name='config-volume',  # Must match the volume name below
+                   mount_path='/etc/config',  # Path in the container to mount the volume
+               )
+           ]
+        )],
+        volumes=[
+            k8s.core.v1.VolumeArgs(
+                name='config-volume',  # Must be referenced in the container's volumeMounts
+                config_map=k8s.core.v1.ConfigMapVolumeSourceArgs(
+                    name=config_map.metadata.name
+                ),
+            )
+        ]
       ),
     ),
   ),
@@ -277,5 +298,3 @@ cmd = pulumi.Output.all(eks_cluster.eks_cluster.name, access_role.arn).apply(
   lambda l: f"aws eks update-kubeconfig --name {l[0]} --role-arn {l[1]}"
 )
 pulumi.export("updateKubeCmd", cmd)
-pulumi.export('atlas_project_id', atlas_project.id)
-pulumi.export('atlas_instance_id', atlas_instance.id)

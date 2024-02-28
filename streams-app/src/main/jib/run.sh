@@ -16,17 +16,4 @@
 # limitations under the License.
 #
 
-if [ ! -z "$CONTROLLER_ENDPOINT" ]; then
-  EXPORTER_OPTS="-javaagent:/app/libs/opentelemetry-javaagent-1.25.0.jar
-  -Dotel.metrics.exporter=otlp
-  -Dotel.service.name=example
-  -Dotel.jmx.config=/extra/otel-jmx.config
-  -Dotel.exporter.otlp.metrics.headers=api-key=${API_KEY},secret=${API_SECRET}
-  -Dotel.exporter.otlp.endpoint=${CONTROLLER_ENDPOINT}
-  -Dotel.exporter.otlp.metrics.endpoint=${CONTROLLER_ENDPOINT}
-  -Dotel.resource.attributes=responsiveApplicationId=responsive/example
-  -Dotel.metric.export.interval=10000
-  "
-fi
-
-java ${EXPORTER_OPTS} -cp @/app/jib-classpath-file dev.responsive.example.Main
+java -cp @/app/jib-classpath-file dev.responsive.example.Main ${ARGS}
