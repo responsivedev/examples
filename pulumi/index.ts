@@ -199,7 +199,10 @@ const genDeployment = new k8s.apps.v1.Deployment(
                         imagePullPolicy: "Always",
                         env:[
                             {name: "ARGS", value: "--generator"}
-                        ]
+                        ],
+                        envFrom: [{
+                            secretRef: {name: appSecrets.metadata.name}
+                        }]
                     }]
                 }
             }
