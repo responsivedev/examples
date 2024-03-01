@@ -39,6 +39,16 @@ jib {
         permissions.set(
             mapOf("/run.sh" to "755")
         )
+        paths {
+            path {
+                setFrom("src/main/jib")
+                into = "/"
+            }
+            path {
+                setFrom("src/main/resources")
+                into = "/mnt"
+            }
+        }
     }
 }
 

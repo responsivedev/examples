@@ -16,9 +16,10 @@
 
 package dev.responsive.example;
 
+import static dev.responsive.example.ConfigUtils.loadConfig;
+
 import dev.responsive.kafka.api.ResponsiveKafkaStreams;
-import java.io.IOException;
-import java.io.InputStream;
+import dev.responsive.kafka.api.stores.ResponsiveStores;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.state.Stores;
 
 @SuppressWarnings("ALL")
 public class Main {
@@ -42,7 +42,7 @@ public class Main {
   public static final String OUTPUT_TOPIC = "output";
 
   public static void main(final String[] args) throws Exception {
-    final Properties props = loadConfig();
+    final Properties props = loadConfig("/mnt/app.properties");
     setUp(props);
 
     final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -84,19 +84,11 @@ public class Main {
     final StreamsBuilder builder = new StreamsBuilder();
     final KStream<String, String> input = builder.stream(INPUT_TOPIC);
     input.groupByKey()
-        .count(Materialized.as(Stores.persistentKeyValueStore("COUNT")))
+        .count(Materialized.as(ResponsiveStores.keyValueStore("COUNT")))
         .toStream()
         // don't spam the output topic
         .filter((k, v) -> k.startsWith("aa"))
         .to(OUTPUT_TOPIC);
     return builder.build();
-  }
-
-  static Properties loadConfig() throws IOException {
-    final Properties cfg = new Properties();
-    try (InputStream inputStream = Main.class.getResourceAsStream("/resources/app.properties")) {
-      cfg.load(inputStream);
-    }
-    return cfg;
   }
 }
