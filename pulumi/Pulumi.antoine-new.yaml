@@ -1,0 +1,13 @@
+config:
+  responsive-demo:kafka_api_key:
+    secure: AAABAAkFpRD4a5bURfHRqWGzu//R0VPqFFr64oaPAxUMKLyVFsHbQtyJY6eUSKET
+  responsive-demo:kafka_api_secret:
+    secure: AAABAH0vwgCWgt2UC4fG3LtvLB/dRJnnd8QHO7R/k1qHipAbVNbX6A7Wrxv2C0Dj11l71QXj4bud4PsdPtQunfpQ/PyEbbXQOhGqjabqF2aODgxcTwSAQFUQlnJ8pQGV
+  responsive-demo:responsive_client_id:
+    secure: AAABANHqHvUebBl+6QdmOZYqX9msPOubdWqBkqMxSkF6zcQyC/kt1Xfy19PuHxBE
+  responsive-demo:responsive_client_secret:
+    secure: AAABAKosyWiQkHCo7xSbkwD41gKHVmTbiWTp9ly144leUlcJhv7GQyzSjgtSSF8M7Ocz8s0TMRr/K7ieoEpQaFG1/7liD0aZLItNWw==
+  responsive-demo:responsive_metrics_key:
+    secure: AAABAOuoSDpOGUZ0Vamz/N0/C1eEgEwsU17vMZa5UXFGb5obUGunLLzylhqrzO/5
+  responsive-demo:responsive_metrics_secret:
+    secure: AAABAPW3OygQygA7E7fnexE/ViwoWdBa2SzNPteBOwaPK0EYAR2Qy0O6pVBbuzYWRPIJVey3brmELiRrfqlufD1LXM7YNfwY76BUjw==

@@ -129,6 +129,26 @@ const namespace = new k8s.core.v1.Namespace(
     {provider}
 )
 
+const encode = (str: string):string => Buffer.from(str).toString('base64');
+const appSecrets = new k8s.core.v1.Secret(
+    "app-secrets",
+    {
+        metadata: {name: 'app-secrets', namespace: namespace.id},
+        data: {
+            "__EXT_RESPONSIVE_CLIENT_ID": config.requireSecret('responsive_client_id').apply(encode),
+            "__EXT_RESPONSIVE_CLIENT_SECRET": config.requireSecret('responsive_client_secret').apply(encode),
+            "__EXT_RESPONSIVE_METRICS_API_KEY": config.requireSecret('responsive_metrics_key').apply(encode),
+            "__EXT_RESPONSIVE_METRICS_SECRET": config.requireSecret('responsive_metrics_secret').apply(encode),
+            "KAFKA_API_KEY": config.requireSecret('kafka_api_key').apply(encode),
+            "KAFKA_API_SECRET": config.requireSecret('kafka_api_secret').apply(encode),
+        },
+        type: "Opaque"
+    },
+    {provider}
+)
+
+// --------------------- deploy the services -------------------------
+
 const appLabels = {app: 'example'}
 const appDeployment = new k8s.apps.v1.Deployment(
     "ExampleDeployment",
@@ -148,7 +168,10 @@ const appDeployment = new k8s.apps.v1.Deployment(
                         imagePullPolicy: "Always",
                         env:[
                             {name: "POD_IP", valueFrom: {fieldRef: {fieldPath: "status.podIP"}}}
-                        ]
+                        ],
+                        envFrom: [{
+                            secretRef: {name: appSecrets.metadata.name}
+                        }]
                     }]
                 }
             }
@@ -187,6 +210,7 @@ const genDeployment = new k8s.apps.v1.Deployment(
 
 export const kubeconfig = eksCluster.kubeconfig;
 export const vpcId = eksVpc.vpcId;
+export const vpcPublicIps = eksVpc.natGateways.apply(nat => nat.map(details => details.publicIp))
 export const eksName = eksCluster.eksCluster.name;
 export const clusterAdminRoleArn = accessRole.arn;
 export const updateKubeCmd = pulumi.all([eksCluster.eksCluster.name, accessRole.arn]).apply(
