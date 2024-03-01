@@ -94,7 +94,7 @@ public class Main {
 
   static Properties loadConfig() throws IOException {
     final Properties cfg = new Properties();
-    try (InputStream inputStream = Main.class.getResourceAsStream("/app.properties")) {
+    try (InputStream inputStream = Main.class.getResourceAsStream("/resources/app.properties")) {
       cfg.load(inputStream);
     }
     return cfg;

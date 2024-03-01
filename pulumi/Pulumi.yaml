@@ -1,6 +1,7 @@
 name: responsive-demo
-runtime:
-  name: python
-  options:
-    virtualenv: venv
-description: A minimal AWS Python Pulumi program
+runtime: nodejs
+description: Demo Cluster for Responsive Kafka Streams
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: typescript
