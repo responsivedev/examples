@@ -16,4 +16,4 @@
 # limitations under the License.
 #
 
-java -cp @/app/jib-classpath-file dev.responsive.example.Main ${ARGS}
+exec java -cp @/app/jib-classpath-file dev.responsive.example.Main ${ARGS}

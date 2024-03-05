@@ -45,28 +45,36 @@ public class Main {
     final Properties props = loadConfig("/mnt/app.properties");
     setUp(props);
 
-    final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    
     if (args.length > 0 && "--generator".equalsIgnoreCase(args[0])) {
-      executorService.submit(new Generator(new KafkaProducer<>(props)));
-      while (!Thread.interrupted()) {
-        Thread.sleep(10_000);
-      }
-      executorService.shutdown();
+      generate(props);
     } else {
-      final Map<String, Object> config = new HashMap<>();
-      props.forEach((k, v) -> config.put((String) k, v));
-
-      final Topology topology = topology();
-      final ResponsiveKafkaStreams streams = new ResponsiveKafkaStreams(topology, props);
-
-      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-        executorService.shutdown();
-        streams.close();
-      }));
-
-      streams.start();
+      consume(props);
     }
+  }
+
+  static void generate(Properties props) throws Exception {
+    final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      executorService.shutdownNow();
+      System.exit(0);
+    }));
+
+    executorService.submit(new Generator(new KafkaProducer<>(props)));
+  }
+
+  static void consume(Properties props) throws Exception {
+    final Map<String, Object> config = new HashMap<>();
+    props.forEach((k, v) -> config.put((String) k, v));
+
+    final Topology topology = topology();
+    final ResponsiveKafkaStreams streams = new ResponsiveKafkaStreams(topology, props);
+
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      streams.close();
+      System.exit(0);
+    }));
+
+    streams.start();
   }
 
   static void setUp(final Properties props) {
