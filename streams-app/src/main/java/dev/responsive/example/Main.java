@@ -60,9 +60,6 @@ public class Main {
     }));
 
     executorService.submit(new Generator(new KafkaProducer<>(props)));
-    while (true) {
-      Thread.sleep(100);
-    }
   }
 
   static void consume(Properties props) throws Exception {
