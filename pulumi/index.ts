@@ -139,6 +139,7 @@ const appSecrets = new k8s.core.v1.Secret(
             "__EXT_RESPONSIVE_CLIENT_SECRET": config.requireSecret('responsive_client_secret').apply(encode),
             "__EXT_RESPONSIVE_METRICS_API_KEY": config.requireSecret('responsive_metrics_key').apply(encode),
             "__EXT_RESPONSIVE_METRICS_SECRET": config.requireSecret('responsive_metrics_secret').apply(encode),
+            "__EXT_RESPONSIVE_STORAGE_HOSTNAME": encode(config.require('responsive_storage_hostname')),
             "KAFKA_API_KEY": config.requireSecret('kafka_api_key').apply(encode),
             "KAFKA_API_SECRET": config.requireSecret('kafka_api_secret').apply(encode),
         },
@@ -193,6 +194,7 @@ const genDeployment = new k8s.apps.v1.Deployment(
             template: {
                 metadata: {labels: genLabels},
                 spec: {
+                    terminationGracePeriodSeconds: 10,
                     containers:[{
                         name: 'generator-container',
                         image: 'public.ecr.aws/x3k6i9w2/responsivedev/example-app',

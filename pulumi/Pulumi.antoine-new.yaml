@@ -11,3 +11,4 @@ config:
     secure: AAABAOuoSDpOGUZ0Vamz/N0/C1eEgEwsU17vMZa5UXFGb5obUGunLLzylhqrzO/5
   responsive-demo:responsive_metrics_secret:
     secure: AAABAPW3OygQygA7E7fnexE/ViwoWdBa2SzNPteBOwaPK0EYAR2Qy0O6pVBbuzYWRPIJVey3brmELiRrfqlufD1LXM7YNfwY76BUjw==
+  responsive-demo:responsive_storage_hostname: demo-small.xiwql.mongodb.net
