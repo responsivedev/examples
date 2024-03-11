@@ -219,5 +219,5 @@ export const vpcPublicIps = eksVpc.natGateways.apply(nat => nat.map(details => d
 export const eksName = eksCluster.eksCluster.name;
 export const clusterAdminRoleArn = accessRole.arn;
 export const updateKubeCmd = pulumi.all([eksCluster.eksCluster.name, accessRole.arn]).apply(
-    vals => `aws eks update-kuebconifg --name ${vals[0]} --roel-arn ${vals[1]}`
+    vals => `aws eks update-kubeconfig --name ${vals[0]} --role-arn ${vals[1]}`
 )

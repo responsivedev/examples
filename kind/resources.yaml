@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: responsive
+  name: example
+  labels:
+    app: example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+        - name: main
+          image: 'public.ecr.aws/x3k6i9w2/responsivedev/example-app'
+          imagePullPolicy: Always
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          volumeMounts:
+            - mountPath: /mnt
+              name: app-config
+      volumes:
+        - configMap:
+            name: app-config
+          name: app-config
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: responsive
+  name: generator
+  labels:
+    app: generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: generator
+  template:
+    metadata:
+      labels:
+        app: generator
+    spec:
+      containers:
+        - name: main
+          image: 'public.ecr.aws/x3k6i9w2/responsivedev/example-app'
+          imagePullPolicy: Always
+          env:
+            - name: ARGS
+              value: "--generator"
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          volumeMounts:
+            - mountPath: /mnt
+              name: app-config
+      volumes:
+        - configMap:
+            name: app-config
+          name: app-config
