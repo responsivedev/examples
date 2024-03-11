@@ -17,6 +17,8 @@ function require_secret () {
       echo "ERROR: Required Secret: $2"
     fi
     echo "ERROR: Secret expected in $SECRETS_ROOT/$1"
+    echo "This secret will be stored on your KinD cluster and loaded"
+    echo "in at runtime using environment variables."
     exit 0
   fi
 }
