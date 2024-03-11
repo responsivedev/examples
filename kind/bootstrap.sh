@@ -14,9 +14,9 @@ function require_secret () {
   if [ ! -f "$SECRETS_ROOT/$1" ]; then
     echo "---"
     if [ ! -z "$2" ]; then
-      echo "$2"
+      echo "ERROR: Required Secret: $2"
     fi
-    echo "Secret expected in $SECRETS_ROOT/$1"
+    echo "ERROR: Secret expected in $SECRETS_ROOT/$1"
     exit 0
   fi
 }
@@ -43,15 +43,17 @@ CLUSTER_NAME=${CLUSTER_NAME:-kind-responsive}
 kind create cluster -n $CLUSTER_NAME
 
 if [ ! -z "$PREVIOUS_CONTEXT" ]; then
-  echo "---"
+  echo ""
   echo "New kubectl context created. To use the previous context, run the following command:"
   echo "$ kubectl config use-context ${PREVIOUS_CONTEXT}"
 fi
 
-echo "---"
+echo ""
 echo "To delete this new KinD cluster, run:"
 echo "$ kind delete cluster -n ${CLUSTER_NAME}"
 
+echo ""
+echo "* Creating Responsive Resources on your new KinD cluster *"
 kubectl create namespace responsive
 kubectl config set-context --current --namespace responsive
 
