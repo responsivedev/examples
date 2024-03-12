@@ -17,7 +17,16 @@ If you are using KinD to create your cluster, simply run the bootstrap shell scr
 $ bash ./kind/bootstrap.sh
 ```
 The bootstrapping will use secrets that are expected to be located inside the `.secrets`
-directory within this repository's working directory.
+directory within this repository's working directory. The following secrets are expected:
+```
+KAFKA_API_KEY (Confluent Cloud API Key)
+KAFKA_API_SECRET (Confluent Cloud API Secret)
+__EXT_RESPONSIVE_CLIENT_ID (Responsive Storage Client ID)
+__EXT_RESPONSIVE_CLIENT_SECRET (Responsive Storage Secret)
+__EXT_RESPONSIVE_METRICS_API_KEY (Responsive Metrics Key)
+__EXT_RESPONSIVE_METRICS_SECRET (Responsive Metrics Secret)
+__EXT_RESPONSIVE_STORAGE_HOSTNAME (KafkaStreams StateStore Hostname)
+```
 
 ### Pulumi
 If you are using Pulumi to create your cluster, you can run `pulumi up` from within the 
