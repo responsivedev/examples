@@ -1,3 +1,6 @@
+######################################
+# Self-contained Kafka Broker and ZK #
+######################################
 apiVersion: v1
 kind: Service
 metadata:
@@ -67,6 +70,9 @@ spec:
 
 ---
 
+######################
+# On-Cluster MongoDB #
+######################
 apiVersion: v1
 kind: Service
 metadata:
@@ -106,6 +112,9 @@ spec:
 
 ---
 
+#########################
+# Toy Kafka Streams App #
+#########################
 apiVersion: apps/v1
 kind: Deployment
 metadata:
