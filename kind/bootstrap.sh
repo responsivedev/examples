@@ -23,13 +23,12 @@ function require_secret () {
   fi
 }
 
-require_secret "KAFKA_API_KEY" "Confluent Cloud API Key"
-require_secret "KAFKA_API_SECRET" "Confluent Cloud API Secret"
-require_secret "__EXT_RESPONSIVE_CLIENT_ID" "Responsive Storage Client ID"
-require_secret "__EXT_RESPONSIVE_CLIENT_SECRET" "Responsive Storage Secret"
 require_secret "__EXT_RESPONSIVE_METRICS_API_KEY" "Responsive Metrics Key"
 require_secret "__EXT_RESPONSIVE_METRICS_SECRET" "Responsive Metrics Secret"
-require_secret "__EXT_RESPONSIVE_STORAGE_HOSTNAME" "KafkaStreams StateStore Hostname"
+#require_secret "__EXT_RESPONSIVE_CLIENT_ID" "Responsive Storage Client ID"
+#require_secret "__EXT_RESPONSIVE_CLIENT_SECRET" "Responsive Storage Secret"
+#require_secret "KAFKA_API_KEY" "Confluent Cloud API Key"
+#require_secret "KAFKA_API_SECRET" "Confluent Cloud API Secret"
 
 if [ ! -f "$REPO_ROOT/kind/app.properties" ]; then
   cp "$REPO_ROOT/kind/default.properties" "$REPO_ROOT/kind/app.properties"
