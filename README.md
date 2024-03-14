@@ -31,6 +31,21 @@ You are now ready to create and bootstrap the KinD cluster:
 $ bash ./kind/bootstrap.sh
 ```
 
+If you want to use credentials with your kafka broker, you can change your `kind/app.properties`
+file to point to the right bootstrap server, and add the following secret file containing
+`kafka.api.key` and `kafka.api.secret`: `./secrets/kafka-creds.properties`
+
+If you are using the Confluent Cloud Schema Registry, you can define `sr.api.key` and
+`sr.api.secret` in `./secrets/ccloud-sr-creds.properties`.
+
+You can re-create your cluster with a new app at any time, which should only take a couple of
+minutes. This will update all of the secrets and docker images with any local changes:
+
+```
+$ kind delete cluster -n kind-responsive
+$ bash ./kind/bootstrap.sh
+```
+
 ### Pulumi
 If you are using Pulumi to create your cluster, you can run `pulumi up` from within the 
 `pulumi` directory.
