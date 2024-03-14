@@ -17,7 +17,13 @@
 package dev.responsive.example;
 
 import com.google.common.util.concurrent.RateLimiter;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HexFormat;
+import java.util.Properties;
 import java.util.Random;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -25,14 +31,19 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 @SuppressWarnings("UnstableApiUsage")
 public class Generator implements Runnable {
 
+  private static final String PROPERTIES_FILENAME = "/mnt/app.properties";
+  private static final double EVENT_RATE_DEFAULT = 100;
+
   private final Random random = new Random();
   private final KafkaProducer<String, String> producer;
-  private final RateLimiter limiter;
+
+  private RateLimiter limiter;
+  private double currentEventRate = EVENT_RATE_DEFAULT;
+  private double totalEventsProduced = 0;
 
   public Generator(final KafkaProducer<String, String> producer) {
     this.producer = producer;
-    final double generatorEventsPerSecond = 100;
-    limiter = RateLimiter.create(generatorEventsPerSecond);
+    this.limiter = RateLimiter.create(currentEventRate);
   }
 
   @Override
@@ -42,6 +53,17 @@ public class Generator implements Runnable {
       event = new ProducerRecord<>(Main.INPUT_TOPIC, key(), value());
       producer.send(event);
       limiter.acquire();
+
+      if (totalEventsProduced++ % currentEventRate != 0) {
+        continue;
+      }
+
+      final double newEventRate = getEventRateOverride();
+      if (newEventRate != currentEventRate && newEventRate > 0) {
+        limiter = RateLimiter.create(newEventRate);
+        currentEventRate = newEventRate;
+        System.out.println("Using new custom rate: " + currentEventRate + " events/s");
+      }
     }
   }
 
@@ -58,4 +80,15 @@ public class Generator implements Runnable {
     return HexFormat.of().formatHex(bytes);
   }
 
+  private double getEventRateOverride() {
+    try {
+      final Properties cfg = ConfigUtils.loadConfig(PROPERTIES_FILENAME);
+      String eventRateString = cfg.getProperty("generator.rate", String.valueOf(EVENT_RATE_DEFAULT));
+      return Double.parseDouble(eventRateString);
+    } catch (Exception e) {
+      System.out.println("Failed to parse event rate: " + e.getMessage());
+    }
+
+    return EVENT_RATE_DEFAULT;
+  }
 }
