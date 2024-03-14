@@ -16,8 +16,6 @@
 
 package dev.responsive.example;
 
-import static dev.responsive.example.ConfigUtils.loadConfig;
-
 import dev.responsive.kafka.api.ResponsiveKafkaStreams;
 import dev.responsive.kafka.api.stores.ResponsiveStores;
 import java.util.HashMap;
@@ -38,11 +36,18 @@ import org.apache.kafka.streams.kstream.Materialized;
 @SuppressWarnings("ALL")
 public class Main {
 
+  private static final String[] PROPERTIES_PATHS = new String[]{
+      "/configs/app.properties",
+      "/secrets/responsive-metrics-creds.properties",
+      "/secrets/kafka-creds.properties",
+      "/secrets/ccloud-sr-creds.properties",
+  };
+
   public static final String INPUT_TOPIC = "input";
   public static final String OUTPUT_TOPIC = "output";
 
   public static void main(final String[] args) throws Exception {
-    final Properties props = loadConfig("/mnt/app.properties");
+    final Properties props = ConfigUtils.loadConfigs(PROPERTIES_PATHS);
     setUp(props);
 
     if (args.length > 0 && "--generator".equalsIgnoreCase(args[0])) {

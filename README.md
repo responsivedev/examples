@@ -12,20 +12,23 @@ This repo also allows you to get up and running using a local Kubernetes In Dock
 
 ## Creating your cluster.
 ### KinD
-If you are using KinD to create your cluster, simply run the bootstrap shell script:
+
+The bootstrapping will use secrets that are expected to be located inside the `secrets`
+directory within this repository's working directory. The following secrets are required:
+
+```
+responsive-metrics-creds.properties (Responsive Metrics Key)
+```
+
+The streams app has to be built locally:
+
+```
+$ ./gradlew :streams-app:jibDockerBuild
+```
+
+You are now ready to create and bootstrap the KinD cluster:
 ```
 $ bash ./kind/bootstrap.sh
-```
-The bootstrapping will use secrets that are expected to be located inside the `.secrets`
-directory within this repository's working directory. The following secrets are expected:
-```
-KAFKA_API_KEY (Confluent Cloud API Key)
-KAFKA_API_SECRET (Confluent Cloud API Secret)
-__EXT_RESPONSIVE_CLIENT_ID (Responsive Storage Client ID)
-__EXT_RESPONSIVE_CLIENT_SECRET (Responsive Storage Secret)
-__EXT_RESPONSIVE_METRICS_API_KEY (Responsive Metrics Key)
-__EXT_RESPONSIVE_METRICS_SECRET (Responsive Metrics Secret)
-__EXT_RESPONSIVE_STORAGE_HOSTNAME (KafkaStreams StateStore Hostname)
 ```
 
 ### Pulumi

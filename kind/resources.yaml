@@ -134,23 +134,25 @@ spec:
     spec:
       containers:
         - name: main
-          image: 'public.ecr.aws/x3k6i9w2/responsivedev/example-app'
-          imagePullPolicy: Always
+          image: 'responsive/example-app'
+          imagePullPolicy: IfNotPresent
           env:
             - name: POD_IP
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
-          envFrom:
-            - secretRef:
-                name: app-secrets
           volumeMounts:
-            - mountPath: /mnt
-              name: app-config
+            - name: app-config
+              mountPath: /configs
+            - name: app-secrets
+              mountPath: /secrets
       volumes:
-        - configMap:
+        - name: app-config
+          configMap:
             name: app-config
-          name: app-config
+        - name: app-secrets
+          secret:
+            secretName: app-secrets
 
 ---
 
@@ -173,18 +175,20 @@ spec:
     spec:
       containers:
         - name: main
-          image: 'public.ecr.aws/x3k6i9w2/responsivedev/example-app'
-          imagePullPolicy: Always
+          image: 'responsive/example-app'
+          imagePullPolicy: IfNotPresent
           env:
             - name: ARGS
               value: "--generator"
-          envFrom:
-            - secretRef:
-                name: app-secrets
           volumeMounts:
-            - mountPath: /mnt
-              name: app-config
+            - name: app-config
+              mountPath: /configs
+            - name: app-secrets
+              mountPath: /secrets
       volumes:
-        - configMap:
+        - name: app-config
+          configMap:
             name: app-config
-          name: app-config
+        - name: app-secrets
+          secret:
+            secretName: app-secrets
