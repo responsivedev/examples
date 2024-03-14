@@ -4,7 +4,7 @@ metadata:
   name: example
   namespace: responsive
 spec:
-  applicationId: responsive-example
+  applicationId: kind-example
   applicationName: example
   applicationNamespace: responsive
   status: POLICY_STATUS_MANAGED
@@ -14,10 +14,10 @@ spec:
     diagnosers:
       - type: PROCESSING_RATE_SCALE_UP
         processingRateScaleUp:
-          rate: 150
+          rate: 15
           windowMs: 15000
       - type: PROCESSING_RATE_SCALE_DOWN
         processingRateScaleDown:
-          rate: 75
+          rate: 7
           windowMs: 15000
 
