@@ -30,7 +30,7 @@ java {
 
 jib {
     to {
-        image = "public.ecr.aws/x3k6i9w2/responsivedev/example-app"
+        image = "responsive/example-app"
     }
     container {
         entrypoint = listOf("/run.sh")

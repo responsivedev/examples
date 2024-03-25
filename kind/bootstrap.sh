@@ -3,7 +3,8 @@
 set -eo pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
-SECRETS_ROOT="$REPO_ROOT/.secrets"
+SECRETS_ROOT="$REPO_ROOT/secrets"
+APP_IMAGE="responsive/example-app"
 
 if ! command -v kind &> /dev/null; then
   echo "Kubernetes In Docker (kind) must be installed on your system."
@@ -19,12 +20,21 @@ function require_secret () {
     echo "ERROR: Secret expected in $SECRETS_ROOT/$1"
     echo "This secret will be stored on your KinD cluster and loaded"
     echo "in at runtime using environment variables."
-    exit 0
+    exit 1
   fi
 }
 
-require_secret "__EXT_RESPONSIVE_METRICS_API_KEY" "Responsive Metrics Key"
-require_secret "__EXT_RESPONSIVE_METRICS_SECRET" "Responsive Metrics Secret"
+function require_app_image () {
+  if [ -z "$(docker images -q $APP_IMAGE 2> /dev/null)" ]; then
+    echo "The example app must be built on your system."
+    echo "You can built it using gradle:"
+    echo "./gradlew :streams-app:jibDockerBuild"
+    exit 1
+  fi
+}
+
+require_app_image
+require_secret "responsive-metrics-creds.properties" "Responsive Metrics Key"
 
 if [ ! -f "$REPO_ROOT/kind/app.properties" ]; then
   cp "$REPO_ROOT/kind/default.properties" "$REPO_ROOT/kind/app.properties"
@@ -50,11 +60,17 @@ echo "To delete this new KinD cluster, run:"
 echo "$ kind delete cluster -n ${CLUSTER_NAME}"
 
 echo ""
+echo "* Loading local streams app image onto KinD cluster *"
+kind -n $CLUSTER_NAME load docker-image $APP_IMAGE
+
+echo ""
 echo "* Creating Responsive Resources on your new KinD cluster *"
 kubectl create namespace responsive
 kubectl config set-context --current --namespace responsive
-
-kubectl create secret generic app-secrets --from-file "$REPO_ROOT/.secrets"
 kubectl create configmap app-config --from-file "$REPO_ROOT/kind/app.properties"
+
+echo ""
+echo "* Creating Credential Secrets *"
+kubectl create secret generic app-secrets --from-file "$SECRETS_ROOT"
 
 kubectl apply -f "$REPO_ROOT/kind/resources.yaml"

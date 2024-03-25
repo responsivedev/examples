@@ -17,21 +17,20 @@
 package dev.responsive.example;
 
 import com.google.common.util.concurrent.RateLimiter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HexFormat;
 import java.util.Properties;
 import java.util.Random;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("UnstableApiUsage")
 public class Generator implements Runnable {
 
-  private static final String PROPERTIES_FILENAME = "/mnt/app.properties";
+  private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
+
+  private static final String PROPERTIES_FILENAME = "/configs/app.properties";
   private static final double EVENT_RATE_DEFAULT = 100;
 
   private final Random random = new Random();
@@ -62,7 +61,7 @@ public class Generator implements Runnable {
       if (newEventRate != currentEventRate && newEventRate > 0) {
         limiter = RateLimiter.create(newEventRate);
         currentEventRate = newEventRate;
-        System.out.println("Using new custom rate: " + currentEventRate + " events/s");
+        LOG.info("Using new custom rate: " + currentEventRate + " events/s");
       }
     }
   }
@@ -82,13 +81,12 @@ public class Generator implements Runnable {
 
   private double getEventRateOverride() {
     try {
-      final Properties cfg = ConfigUtils.loadConfig(PROPERTIES_FILENAME);
-      String eventRateString = cfg.getProperty("generator.rate", String.valueOf(EVENT_RATE_DEFAULT));
+      final Properties cfg = ConfigUtils.loadConfigs(PROPERTIES_FILENAME);
+      String eventRateString = cfg.getProperty("generator.rate", String.valueOf(currentEventRate));
       return Double.parseDouble(eventRateString);
     } catch (Exception e) {
-      System.out.println("Failed to parse event rate: " + e.getMessage());
+      LOG.error("Failed to parse event rate: " + e.getMessage());
     }
-
-    return EVENT_RATE_DEFAULT;
+    return currentEventRate;
   }
 }

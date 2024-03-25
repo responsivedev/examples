@@ -21,106 +21,59 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
-import java.util.function.BiConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConfigUtils {
 
-  private ConfigUtils() { }
+  private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
-  public static final String KAFKA_API_KEY_ENV = "KAFKA_API_KEY";
-  public static final String KAFKA_API_SECRET_ENV = "KAFKA_API_SECRET";
-
-  public static final String SR_API_KEY_ENV = "SR_API_KEY";
-  public static final String SR_API_SECRET_ENV = "SR_API_SECRET";
-
-  public static Properties loadConfig(
-      final String path
-  ) throws IOException {
-    return loadConfig(path, System.getenv());
-  }
-
-  public static Properties loadConfig(
-      final String path,
-      final Map<String, String> env
-  ) throws IOException {
-    final Properties config = loadInitialConfig(path);
-    loadGenericEnvConfigs(config, env);
-    loadCCloudBrokerConfigs(config, env);
-    loadCCloudSRConfigs(config, env);
-    return config;
-  }
-
-  private static Properties loadInitialConfig(final String configFile) throws IOException {
-    if (!Files.exists(Paths.get(configFile))) {
-      throw new IOException(configFile + " not found.");
-    }
-
+  public static Properties loadConfigs(final String... paths) throws IOException {
     final Properties cfg = new Properties();
-    try (InputStream inputStream = new FileInputStream(configFile)) {
-      cfg.load(inputStream);
+    for (var path : paths) {
+      loadConfigIfPresent(cfg, path);
     }
 
+    postProcessProperties(cfg);
     return cfg;
   }
 
-  public static void loadGenericEnvConfigs(
-      final Properties config,
-      final Map<String, String> env
-  ) {
-    loadGenericEnvConfigs(config::put, env);
-  }
+  private static void loadConfigIfPresent(final Properties cfg, final String path)
+      throws IOException {
+    if (!Files.exists(Paths.get(path))) {
+      return;
+    }
 
-  private static void loadGenericEnvConfigs(
-      final BiConsumer<String, String> setter,
-      final Map<String, String> env
-  ) {
-    for (final Map.Entry<String, String> var : env.entrySet()) {
-      if (var.getKey().startsWith("__EXT_")) {
-        final String key = var.getKey()
-            .substring("__EXT_".length())
-            .toLowerCase(Locale.ROOT).replace('_', '.');
-        setter.accept(key, var.getValue());
-      }
+    LOG.info("Loading config from " + path);
+    try (InputStream inputStream = new FileInputStream(path)) {
+      cfg.load(inputStream);
     }
   }
 
-  private static void loadCCloudBrokerConfigs(
-      final Properties config,
-      final Map<String, String> env
-  ) {
-    if (hasEnv(KAFKA_API_KEY_ENV, env)) {
-      config.put("security.protocol", "SASL_SSL");
-      config.put("sasl.mechanism", "PLAIN");
-      config.put(
+  private static void postProcessProperties(Properties cfg) {
+    if (cfg.containsKey("kafka.api.key")) {
+      LOG.info("Kafka broker credentials detected.");
+      cfg.put("security.protocol", "SASL_SSL");
+      cfg.put("sasl.mechanism", "PLAIN");
+      cfg.put(
           "sasl.jaas.config",
           ("org.apache.kafka.common.security.plain.PlainLoginModule "
               + "required username='%s' "
               + "password='%s';").formatted(
-              env.get(KAFKA_API_KEY_ENV),
-              env.get(KAFKA_API_SECRET_ENV))
+              cfg.get("kafka.api.key"),
+              cfg.get("kafka.api.secret")
+          )
       );
     }
-  }
 
-  private static void loadCCloudSRConfigs(
-      final Properties config,
-      final Map<String, String> env
-  ) {
-    if (hasEnv(SR_API_KEY_ENV, env)) {
-      config.put("basic.auth.credentials.source", "USER_INFO");
-      config.put(
+    if (cfg.containsKey("sr.api.key")) {
+      LOG.info("ConfluentCloud Schema Repository detected.");
+      cfg.put("basic.auth.credentials.source", "USER_INFO");
+      cfg.put(
           "basic.auth.user.info",
-          "%s:%s".formatted(env.get(SR_API_KEY_ENV), env.get(SR_API_SECRET_ENV))
+          "%s:%s".formatted(cfg.get("sr.api.key"), cfg.get("sr.api.secret"))
       );
     }
   }
-
-  private static boolean hasEnv(final String key, final Map<String, String> env) {
-    final var val = env.get(key);
-    return val != null && !val.isBlank();
-  }
-
 }
