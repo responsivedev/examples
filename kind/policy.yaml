@@ -4,7 +4,7 @@ metadata:
   name: example
   namespace: responsive
 spec:
-  applicationId: kind-example
+  applicationId: my-responsive-example
   applicationName: example
   applicationNamespace: responsive
   status: POLICY_STATUS_MANAGED

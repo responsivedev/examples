@@ -1,37 +1,77 @@
 # Responsive Examples
 
 This repository contains an example Kafka Streams application that is powered
-by the Responsive Platform for Kafka Streams. There are two modules: the
-`streams-app` module, which contains the application logic (described below),
-and the `pulumi` module, which contains the infrastructure-as-code definition
-required for deploying the streams application into an AWS EKS cluster with
-the Responsive operator.
+by the Responsive Platform for Kafka Streams. 
 
-This repo also allows you to get up and running using a local Kubernetes In Docker
+This repo allows you to get up and running using a local Kubernetes In Docker
 (kind) cluster.
 
-## Creating your cluster.
+## Creating your cluster
+
+This Example application assumes you have access to Responsive Cloud. If you do not
+yet have an account and cannot create one, reach out to `info@responsive.dev` to get
+started.
+
+1. Log in to [Responsive Cloud](https://cloud.responsive.dev). 
+2. Take note of your Organization slug. You may change it to a meaningful value at this point, but
+   you should not change it after you have deployed any application.
+3. After logging in, create a new environment (you can name this whatever you want) and take note of
+   the environment slug.
+4. In this new environment, create an application with the name `My Responsive Example` and id
+   `my-responsive-example`.
+5. Navigate back to the new environment and open the "Security" tab. Create a new API key and take
+   note of the key/secret values.
+
 ### KinD
 
-The bootstrapping will use secrets that are expected to be located inside the `secrets`
-directory within this repository's working directory. The following secrets are required:
+These steps will instruct you on how to set up a local kubernetes cluster using KinD. 
+It will contain the following deployments:
+- The example `Responsive` application
+- A data generator for the example application that can be independently scaled
+- A Kafka Broker
+- A MongoDB server
+
+1. Set up the secrets. The bootstrapping will use secrets that are expected to be located inside
+   the `secrets` directory within this repository's working directory. You must have at least a
+   file named `responsive-metrics-creds.properties` with values for `responsive.metrics.api.key`
+   and `responsive.metrics.secret`. (Note that these are not the default names for the api key and
+   secret that are downloaded from the UI -- we're working on making that clearer!)
 
 ```
 responsive-metrics-creds.properties (Responsive Metrics Key)
 ```
 
-The streams app has to be built locally:
+2. Build the `responsive-example` docker image so that you can load it locally:
 
 ```
 $ ./gradlew :streams-app:jibDockerBuild
 ```
 
-You are now ready to create and bootstrap the KinD cluster:
+3. Navigate to the "Setup" tab in the Cloud UI for your newly created application and
+   take note of the configurations. Populate the `responsive.tenant.id` and 
+   `responsive.controller.endpoint` values in `kind/app.properties`
+
+4. You are now ready to create and bootstrap the KinD cluster:
 ```
 $ bash ./kind/bootstrap.sh
 ```
 
-If you want to use credentials with your kafka broker, you can change your `kind/app.properties`
+Once this completes, you should be able to see the following pods deployed:
+```
+ kubectl get pods -n responsive
+NAME                            READY   STATUS    RESTARTS      AGE
+example-6c5dd46bd8-2f4r2        1/1     Running   1 (57s ago)   65s
+generator-59975d568c-q9dkm      1/1     Running   1 (57s ago)   65s
+kafka-broker-75b984c48d-cq928   2/2     Running   0             65s
+mongo-855c74c766-cq2gj          1/1     Running   0             65s
+```
+
+If you navigate back to the cloud UI, you should now see metrics flowing through into the dashboard.
+Note that storage metrics will not be available for locally-provisioned mongoDB clusters.
+
+#### Configurations for Confluent Cloud
+
+If you want to use credentials with Confluent Cloud, you can change your `kind/app.properties`
 file to point to the right bootstrap server, and add the following secret file containing
 `kafka.api.key` and `kafka.api.secret`: `./secrets/kafka-creds.properties`
 
@@ -47,30 +87,24 @@ $ bash ./kind/bootstrap.sh
 ```
 
 ### Pulumi
+
 If you are using Pulumi to create your cluster, you can run `pulumi up` from within the 
 `pulumi` directory.
 
-## Building The Streams App
-
-There are a few phases for building this project - when making changes to the
-`streams-app` module, use `./gradlew build` to ensure that it can build locally
-and then use `./gradlew :streams-app:jib` to build the docker image for the
-streams application (note that this requires AWS ECR credentials to push to
-the public ECR repository).
-
-To deploy the streams app into an EKS cluster, `cd` into the `pulumi` dir. First,
-you need to set the secrets for the Kafka Cluster credentials and ScyllaDB cluster 
-credentials. 
-
-**NOTE:** at the moment, the kafka cluster and scyllaDB cluster/user are hard-coded.
-We should update this to allow public usage of this repository.
-
-```bash
-pulumi config set --secret kafkaSaslJaasConfig "org.apache.kafka.common.security.plain.PlainLoginModule required username='<USERNAME>' password='<PASSWORD>';" 
-pulumi config set --secret responsiveClientSecret <responsive_secret>
-```
-
-Then run `pulumi up` (ensure you have `pulumi` installed).
-
 ## Running the Operator
-Follow the instructions on https://cloud.responsive.dev to run the operator in your cluster.
+
+Follow the steps in the "Setup" pane within the environment you created to deploy the operator and
+set up an autoscaling policy.
+
+## Troubleshooting
+
+**Getting `Invalid API Key or Secret` in the Logs**. 
+
+Make sure that you have properly configured `secrets/responsive-metrics-creds.properties`. An
+example file looks like this:
+```properties
+# Responsive API Credentials | responsive-kind
+
+responsive.metrics.api.key=ABCDEFGHIJKLMNOP
+responsive.metrics.secret=ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG1234567890=
+```
