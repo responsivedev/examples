@@ -17,9 +17,7 @@
 package dev.responsive.example;
 
 import com.google.common.util.concurrent.RateLimiter;
-import java.util.HexFormat;
 import java.util.Properties;
-import java.util.Random;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
@@ -33,8 +31,8 @@ public class Generator implements Runnable {
   private static final String PROPERTIES_FILENAME = "/configs/app.properties";
   private static final double EVENT_RATE_DEFAULT = 100;
 
-  private final Random random = new Random();
   private final KafkaProducer<String, String> producer;
+  private final Dictionary dictionary;
 
   private RateLimiter limiter;
   private double currentEventRate = EVENT_RATE_DEFAULT;
@@ -43,13 +41,14 @@ public class Generator implements Runnable {
   public Generator(final KafkaProducer<String, String> producer) {
     this.producer = producer;
     this.limiter = RateLimiter.create(currentEventRate);
+    this.dictionary = new Dictionary();
   }
 
   @Override
   public void run() {
     while (!Thread.currentThread().isInterrupted()) {
       final ProducerRecord<String, String> event;
-      event = new ProducerRecord<>(Main.INPUT_TOPIC, key(), value());
+      event = new ProducerRecord<>(Main.INPUT_TOPIC, null, dictionary.randomLine());
       producer.send(event);
       limiter.acquire();
 
@@ -64,19 +63,6 @@ public class Generator implements Runnable {
         LOG.info("Using new custom rate: " + currentEventRate + " events/s");
       }
     }
-  }
-
-  private String key() {
-    // generate very few collisions
-    byte[] bytes = new byte[256];
-    random.nextBytes(bytes);
-    return HexFormat.of().formatHex(bytes);
-  }
-
-  private String value() {
-    byte[] bytes = new byte[32];
-    random.nextBytes(bytes);
-    return HexFormat.of().formatHex(bytes);
   }
 
   private double getEventRateOverride() {

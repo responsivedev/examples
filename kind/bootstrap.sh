@@ -34,7 +34,6 @@ function require_app_image () {
 }
 
 require_app_image
-require_secret "responsive-metrics-creds.properties" "Responsive Metrics Key"
 
 if [ ! -f "$REPO_ROOT/kind/app.properties" ]; then
   cp "$REPO_ROOT/kind/default.properties" "$REPO_ROOT/kind/app.properties"
@@ -47,30 +46,43 @@ fi
 
 PREVIOUS_CONTEXT=$(kubectl config current-context 2> /dev/null || true)
 CLUSTER_NAME=${CLUSTER_NAME:-kind-responsive}
-kind create cluster -n $CLUSTER_NAME
 
-if [ ! -z "$PREVIOUS_CONTEXT" ]; then
+EXISTS=$(kind get clusters -q | grep $CLUSTER_NAME || true)
+if [ -z "$EXISTS" ];
+then
+  kind create cluster -n $CLUSTER_NAME
+
+  if [ ! -z "$PREVIOUS_CONTEXT" ]; then
+    echo ""
+    echo "New kubectl context created. To use the previous context, run the following command:"
+    echo "$ kubectl config use-context ${PREVIOUS_CONTEXT}"
+  fi
+
   echo ""
-  echo "New kubectl context created. To use the previous context, run the following command:"
-  echo "$ kubectl config use-context ${PREVIOUS_CONTEXT}"
+  echo "To delete this new KinD cluster, run:"
+  echo "$ kind delete cluster -n ${CLUSTER_NAME}"
+
+  echo ""
+  echo "* Creating Responsive Resources on your new KinD cluster *"
+  kubectl create namespace responsive
 fi
 
-echo ""
-echo "To delete this new KinD cluster, run:"
-echo "$ kind delete cluster -n ${CLUSTER_NAME}"
+kubectl config set-context --current --namespace responsive
 
 echo ""
 echo "* Loading local streams app image onto KinD cluster *"
 kind -n $CLUSTER_NAME load docker-image $APP_IMAGE
 
-echo ""
-echo "* Creating Responsive Resources on your new KinD cluster *"
-kubectl create namespace responsive
-kubectl config set-context --current --namespace responsive
+kubectl delete configmap app-config --ignore-not-found=true
 kubectl create configmap app-config --from-file "$REPO_ROOT/kind/app.properties"
 
 echo ""
 echo "* Creating Credential Secrets *"
+kubectl delete secret app-secrets --ignore-not-found=true
 kubectl create secret generic app-secrets --from-file "$SECRETS_ROOT"
 
 kubectl apply -f "$REPO_ROOT/kind/resources.yaml"
+
+if [ ! -z "$EXISTS" ]; then
+  kubectl delete pod -n responsive -l app=example &
+fi

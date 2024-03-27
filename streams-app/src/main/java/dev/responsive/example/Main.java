@@ -16,8 +16,7 @@
 
 package dev.responsive.example;
 
-import dev.responsive.kafka.api.ResponsiveKafkaStreams;
-import dev.responsive.kafka.api.stores.ResponsiveStores;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,23 +27,30 @@ import java.util.concurrent.Executors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.state.Stores;
 
 @SuppressWarnings("ALL")
 public class Main {
 
-  private static final String[] PROPERTIES_PATHS = new String[]{
+  private static final String[] PROPERTIES_PATHS = new String[] {
       "/configs/app.properties",
-      "/secrets/responsive-metrics-creds.properties",
+      "/secrets/responsive-creds.properties",
       "/secrets/kafka-creds.properties",
       "/secrets/ccloud-sr-creds.properties",
   };
 
-  public static final String INPUT_TOPIC = "input";
-  public static final String OUTPUT_TOPIC = "output";
+  public static final String INPUT_TOPIC = "responsive-example-input";
+  public static final String OUTPUT_TOPIC = "responsive-example-output";
 
   public static void main(final String[] args) throws Exception {
     final Properties props = ConfigUtils.loadConfigs(PROPERTIES_PATHS);
@@ -72,7 +78,7 @@ public class Main {
     props.forEach((k, v) -> config.put((String) k, v));
 
     final Topology topology = topology();
-    final ResponsiveKafkaStreams streams = new ResponsiveKafkaStreams(topology, props);
+    final KafkaStreams streams = new KafkaStreams(topology, props);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       streams.close();
@@ -95,13 +101,31 @@ public class Main {
 
   static Topology topology() {
     final StreamsBuilder builder = new StreamsBuilder();
-    final KStream<String, String> input = builder.stream(INPUT_TOPIC);
-    input.groupByKey()
-        .count(Materialized.as(ResponsiveStores.keyValueStore("COUNT")))
+    // Serializers/deserializers (serde) for String and Long types
+    final Serde<String> stringSerde = Serdes.String();
+    final Serde<Long> longSerde = Serdes.Long();
+
+    // Construct a `KStream` from the input topic, where message values
+    // represent lines of text (for the sake of this example, we ignore whatever may be stored
+    // in the message keys).
+    final KStream<String, String> textLines = builder.stream(
+        INPUT_TOPIC,
+        Consumed.with(stringSerde, stringSerde)
+    );
+
+    final KTable<String, Long> wordCounts = textLines
+        // Split each text line, by whitespace, into words.
+        .flatMapValues(value -> Arrays.asList(value.toLowerCase().split("\\W+")))
+        // Group the text words as message keys
+        .groupBy((key, value) -> value)
+        // Count the occurrences of each word (message key).
+        .count(Materialized.as(Stores.persistentKeyValueStore("word-counts")));
+
+    // Store the running counts as a changelog stream to the output topic.
+    wordCounts
         .toStream()
-        // don't spam the output topic
-        .filter((k, v) -> k.startsWith("aa"))
-        .to(OUTPUT_TOPIC);
+        .to(OUTPUT_TOPIC, Produced.with(Serdes.String(), Serdes.Long()));
+
     return builder.build();
   }
 }
