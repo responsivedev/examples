@@ -1,0 +1,263 @@
+######################################
+# Self-contained Kafka Broker and ZK #
+######################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-broker
+  namespace: responsive
+  labels:
+    app: kafka-broker
+spec:
+  ports:
+    - port: 9092
+      name: main
+    - port: 9093
+      name: oneup
+    - port: 29092
+      name: internal
+  selector:
+    app: kafka-broker
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kafka-data-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /data/mongo
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: responsive
+  name: kafka-broker
+  labels:
+    app: kafka-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-broker
+  template:
+    metadata:
+      labels:
+        app: kafka-broker
+    spec:
+      containers:
+        - name: broker
+          image: confluentinc/cp-kafka:7.3.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://:29092,PLAINTEXT_INTERNAL://kafka-broker:9092"
+            - name: KAFKA_BROKER_ID
+              value: "1"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS
+              value: "1000"
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: '0.0.0.0:2181'
+          volumeMounts:
+            - name: "kafka-data-dir"
+              mountPath: "/var/lib/kafka/data"
+        - name: zk
+          image: confluentinc/cp-zookeeper:7.3.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "2000"
+      volumes:
+        - name: "kafka-data-dir"
+          persistentVolumeClaim:
+            claimName: kafka-data-pvc
+
+---
+
+######################
+# On-Cluster MongoDB #
+######################
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: responsive
+  labels:
+    app: mongo
+spec:
+  ports:
+    - port: 27017
+      name: main
+      protocol: TCP
+  selector:
+    app: mongo
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongo-data-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /data/mongo
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "mongo"
+  namespace: responsive
+spec:
+  selector:
+    matchLabels:
+      app: "mongo"
+  replicas: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: "mongo"
+    spec:
+      containers:
+        - name: "mongo"
+          image: mongo:7.0.2
+          imagePullPolicy: IfNotPresent
+          args: [ "--dbpath", "/data/db" ]
+          volumeMounts:
+            - name: "mongo-data-dir"
+              mountPath: "/data/db"
+      volumes:
+        - name: "mongo-data-dir"
+          persistentVolumeClaim:
+            claimName: mongo-data-pvc
+
+---
+
+#########################
+# Toy Kafka Streams App #
+#########################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: responsive
+  name: example
+  labels:
+    app: example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+        - name: main
+          image: 'responsive/example-app'
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+          volumeMounts:
+            - name: app-config
+              mountPath: /configs
+            - name: app-secrets
+              mountPath: /secrets
+      volumes:
+        - name: app-config
+          configMap:
+            name: app-config
+        - name: app-secrets
+          secret:
+            secretName: app-secrets
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: responsive
+  name: generator
+  labels:
+    app: generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: generator
+  template:
+    metadata:
+      labels:
+        app: generator
+    spec:
+      containers:
+        - name: main
+          image: 'responsive/example-app'
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ARGS
+              value: "--generator"
+          volumeMounts:
+            - name: app-config
+              mountPath: /configs
+            - name: app-secrets
+              mountPath: /secrets
+      volumes:
+        - name: app-config
+          configMap:
+            name: app-config
+        - name: app-secrets
+          secret:
+            secretName: app-secrets

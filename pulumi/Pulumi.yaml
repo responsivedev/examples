@@ -1,0 +1,7 @@
+name: responsive-demo
+runtime: nodejs
+description: Demo Cluster for Responsive Kafka Streams
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: typescript

@@ -1,0 +1,23 @@
+apiVersion: "application.responsive.dev/v1"
+kind: "ResponsivePolicy"
+metadata:
+  name: example
+  namespace: responsive
+spec:
+  applicationId: responsive-example
+  applicationName: example
+  applicationNamespace: responsive
+  status: POLICY_STATUS_MANAGED
+  policyType: KAFKA_STREAMS
+  kafkaStreamsPolicy:
+    maxReplicas: 3
+    diagnosers:
+      - type: PROCESSING_RATE_SCALE_UP
+        processingRateScaleUp:
+          rate: 150
+          windowMs: 15000
+      - type: PROCESSING_RATE_SCALE_DOWN
+        processingRateScaleDown:
+          rate: 75
+          windowMs: 15000
+
