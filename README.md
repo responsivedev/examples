@@ -33,7 +33,7 @@ $ bash ./kind/bootstrap.sh
 
 Once this completes, you should be able to see the following pods deployed:
 ```
- kubectl get pods -n responsive
+$ kubectl get pods -n responsive
 NAME                            READY   STATUS    RESTARTS      AGE
 example-6c5dd46bd8-2f4r2        1/1     Running   1 (57s ago)   65s
 generator-59975d568c-q9dkm      1/1     Running   1 (57s ago)   65s
@@ -51,11 +51,11 @@ is the graduation hat on the left sidebar).
 Follow the instructions to create an environment named `example` and an 
 application with the id `my-responsive-example`.
 
-![create-env.png](create-env.png)
+![create-env.png](docs/create-env.png)
 
 Create a new application:
 
-![create-app.png](create-app.png)
+![create-app.png](docs/create-app.png)
 
 You should also provision a storage cluster - this will take anywhere from
 five to ten minutes.
@@ -102,6 +102,9 @@ index 8f8f627..6668c41 100644
      
 ```
 
+You can apply the patch above by copying it to clipboard and executing
+`pbpaste | git apply`.
+
 ### API Keys
 
 You will need API keys for metrics as well as data storage. You can create
@@ -110,31 +113,33 @@ environment "Security" tab in the top navigation bar (or press the button
 to create an API Key in the Tutorial after setting the environment in the
 second step):
 
-![create-metrics-key.png](create-metrics-key.png)
+![create-metrics-key.png](docs/create-metrics-key.png)
 
 To create the storage API keys, first wait for the provisioning to complete
 and then create your API keys and add your ip to the access list. This happens
 within the scope of an application (so first select your newly crated application):
 
-![configure-storage.png](configure-storage.png)
+![configure-storage.png](docs/configure-storage.png)
+
+**NOTE:** for both of these files, you will need to change the property values to
+be the expected configurations (we're working on making this easier!)
 
 ### Configurations
 
 There are two parts to the configurations:
 
-1. the application configurations
+1. the application configurations (the default is stored in `./kind/app.properties`)
 2. the secret configurations
 
 You may choose to simply put all of you configurations in plaintext (since it is
 a local cluster) by copy-pasting the configurations displayed in the UI and adding
-the values for you secrets:
+the values for you secrets into `./kind/app.properties`:
 
-![configurations.png](configurations.png)
+![configurations.png](docs/configurations.png)
 
-To take advantage of kubernetes secrets, you can put your secrets in
-a file named `responsive-creds.properties` in the `./secrets`
-folder of this repository. This file should contain the following
-configuration properties:
+To take advantage of kubernetes secrets, omit the secret configurations from `app.properties` and
+put your secrets in a file named `responsive-creds.properties` in the `./secrets` folder of this
+repository. This file should contain the following configuration properties:
 
 ```properties
 # metrics secrets (environment API key)
@@ -163,6 +168,30 @@ $ bash ./kind/bootstrap.sh
 ```
 
 When the application restarts you should start to see metrics on the dashboard.
+
+## Setup Operator & Configure Autoscaling
+
+Follow the steps in the tutorial to set up the operator. Once you have the operator
+up and running, you can apply an autoscaling policy:
+
+```bash
+kubectl apply -n responsive -f ./kind/policy.yaml
+```
+
+This will register `my-responsive-example` with the operator with a policy that
+indicates that whenever a single node is processing more than 150 events per second
+to scale out and whenever all nodes are processing less than 75 events per second to
+scale down.
+
+You may begin varying the event generation rate by scaling the generator deployment
+up or down:
+
+```bash
+kubectl scale deployment -n responsive generator --replicas <N>
+```
+
+Each replica of the generator will generate 100 events per second, so as you scale it up
+you will see the processing rate on the dashboard increase
 
 ## Troubleshooting
 
