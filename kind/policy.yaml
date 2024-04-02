@@ -14,10 +14,10 @@ spec:
     diagnosers:
       - type: PROCESSING_RATE_SCALE_UP
         processingRateScaleUp:
-          rate: 15
+          rate: 2000
           windowMs: 15000
       - type: PROCESSING_RATE_SCALE_DOWN
         processingRateScaleDown:
-          rate: 7
+          rate: 1000
           windowMs: 15000
 
