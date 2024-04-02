@@ -58,7 +58,8 @@ Create a new application:
 ![create-app.png](docs/create-app.png)
 
 You should also provision a storage cluster - this will take anywhere from
-five to ten minutes.
+five to ten minutes. To do so, navigate to the `Storage` tab at the top of
+the page, and click `Provision Storage`.
 
 ## Migrate to Responsive
 
@@ -102,8 +103,8 @@ index 8f8f627..6668c41 100644
      
 ```
 
-You can apply the patch above by copying it to clipboard and executing
-`pbpaste | git apply`.
+You can run `git apply streams-app/src/main/resources/responsive-patch.diff` to apply the change
+locally.
 
 ### API Keys
 
@@ -116,8 +117,9 @@ second step):
 ![create-metrics-key.png](docs/create-metrics-key.png)
 
 To create the storage API keys, first wait for the provisioning to complete
-and then create your API keys and add your ip to the access list. This happens
-within the scope of an application (so first select your newly crated application):
+and then create your API keys. Since you are running this locally **make sure to add
+your local ip to the access list**. This happens within the scope of an application
+(so first select your newly crated application):
 
 ![configure-storage.png](docs/configure-storage.png)
 
@@ -195,7 +197,7 @@ you will see the processing rate on the dashboard increase
 
 ## Troubleshooting
 
-**Getting `Invalid API Key or Secret` in the Logs**.
+### Getting `Invalid API Key or Secret` in the logs
 
 Make sure that you have properly configured `secrets/responsive-metrics-creds.properties`. An
 example file looks like this:
@@ -205,3 +207,12 @@ example file looks like this:
 responsive.metrics.api.key=ABCDEFGHIJKLMNOP
 responsive.metrics.secret=ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG1234567890=
 ```
+
+### Getting `Exception opening socket` in the logs
+
+Make sure that you have added your local public IP address to the whitelist in the Storage tab
+on https://cloud.responsive.dev.
+
+### Helm install command failed with 403
+
+Make sure that your docker credentials are valid, or use `docker logout` to remove them altogether.

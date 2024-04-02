@@ -1,0 +1,32 @@
+diff --git a/streams-app/src/main/java/dev/responsive/example/Main.java b/streams-app/src/main/java/dev/responsive/example/Main.java
+index 8f8f627..6668c41 100644
+--- a/streams-app/src/main/java/dev/responsive/example/Main.java
++++ b/streams-app/src/main/java/dev/responsive/example/Main.java
+@@ -16,6 +16,8 @@
+
+ package dev.responsive.example;
+
++import dev.responsive.kafka.api.ResponsiveKafkaStreams;
++import dev.responsive.kafka.api.stores.ResponsiveStores;
+ import java.util.Arrays;
+ import java.util.HashMap;
+ import java.util.List;
+@@ -78,7 +80,7 @@ public class Main {
+     props.forEach((k, v) -> config.put((String) k, v));
+
+     final Topology topology = topology();
+-    final KafkaStreams streams = new KafkaStreams(topology, props);
++    final KafkaStreams streams = new ResponsiveKafkaStreams(topology, props);
+
+     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+       streams.close();
+@@ -119,7 +121,7 @@ public class Main {
+         // Group the text words as message keys
+         .groupBy((key, value) -> value)
+         // Count the occurrences of each word (message key).
+-        .count(Materialized.as(Stores.persistentKeyValueStore("word-counts")));
++        .count(Materialized.as(ResponsiveStores.keyValueStore("word-counts")));
+
+     // Store the running counts as a changelog stream to the output topic.
+     wordCounts
+    
