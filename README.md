@@ -215,4 +215,5 @@ on https://cloud.responsive.dev.
 
 ### Helm install command failed with 403
 
-Make sure that your docker credentials are valid, or use `docker logout` to remove them altogether.
+Make sure that your docker credentials are valid, or use `docker logout public.ecr.aws` to
+remove them altogether.
