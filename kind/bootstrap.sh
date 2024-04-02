@@ -84,7 +84,7 @@ kubectl create secret generic app-secrets --from-file "$SECRETS_ROOT"
 kubectl apply -f "$REPO_ROOT/kind/infra-resources.yaml"
 echo ""
 echo "* Waiting for healthy Kafka brokers *"
-kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 deployments/kafka-broker
+kubectl wait --timeout=600s --for=jsonpath='{.status.readyReplicas}'=1 deployments/kafka-broker
 
 kubectl apply -f "$REPO_ROOT/kind/app-resources.yaml"
 
