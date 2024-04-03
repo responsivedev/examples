@@ -81,7 +81,12 @@ echo "* Creating Credential Secrets *"
 kubectl delete secret app-secrets --ignore-not-found=true
 kubectl create secret generic app-secrets --from-file "$SECRETS_ROOT"
 
-kubectl apply -f "$REPO_ROOT/kind/resources.yaml"
+kubectl apply -f "$REPO_ROOT/kind/infra-resources.yaml"
+echo ""
+echo "* Waiting for healthy Kafka brokers *"
+kubectl wait --timeout=600s --for=jsonpath='{.status.readyReplicas}'=1 deployments/kafka-broker
+
+kubectl apply -f "$REPO_ROOT/kind/app-resources.yaml"
 
 if [ ! -z "$EXISTS" ]; then
   kubectl delete pod -n responsive -l app=example &

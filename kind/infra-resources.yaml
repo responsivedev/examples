@@ -86,6 +86,8 @@ spec:
               value: "1000"
             - name: KAFKA_ZOOKEEPER_CONNECT
               value: '0.0.0.0:2181'
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "false"
           volumeMounts:
             - name: "kafka-data-dir"
               mountPath: "/var/lib/kafka/data"
@@ -178,86 +180,3 @@ spec:
         - name: "mongo-data-dir"
           persistentVolumeClaim:
             claimName: mongo-data-pvc
-
----
-
-#########################
-# Toy Kafka Streams App #
-#########################
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  namespace: responsive
-  name: example
-  labels:
-    app: example
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: example
-  template:
-    metadata:
-      labels:
-        app: example
-    spec:
-      containers:
-        - name: main
-          image: 'responsive/example-app'
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: "status.podIP"
-          volumeMounts:
-            - name: app-config
-              mountPath: /configs
-            - name: app-secrets
-              mountPath: /secrets
-      volumes:
-        - name: app-config
-          configMap:
-            name: app-config
-        - name: app-secrets
-          secret:
-            secretName: app-secrets
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  namespace: responsive
-  name: generator
-  labels:
-    app: generator
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: generator
-  template:
-    metadata:
-      labels:
-        app: generator
-    spec:
-      containers:
-        - name: main
-          image: 'responsive/example-app'
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: ARGS
-              value: "--generator"
-          volumeMounts:
-            - name: app-config
-              mountPath: /configs
-            - name: app-secrets
-              mountPath: /secrets
-      volumes:
-        - name: app-config
-          configMap:
-            name: app-config
-        - name: app-secrets
-          secret:
-            secretName: app-secrets
