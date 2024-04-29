@@ -135,11 +135,11 @@ const appSecrets = new k8s.core.v1.Secret(
     {
         metadata: {name: 'app-secrets', namespace: namespace.id},
         data: {
-            "__EXT_RESPONSIVE_CLIENT_ID": config.requireSecret('responsive_client_id').apply(encode),
-            "__EXT_RESPONSIVE_CLIENT_SECRET": config.requireSecret('responsive_client_secret').apply(encode),
-            "__EXT_RESPONSIVE_METRICS_API_KEY": config.requireSecret('responsive_metrics_key').apply(encode),
-            "__EXT_RESPONSIVE_METRICS_SECRET": config.requireSecret('responsive_metrics_secret').apply(encode),
-            "__EXT_RESPONSIVE_STORAGE_HOSTNAME": encode(config.require('responsive_storage_hostname')),
+            "__EXT_RESPONSIVE_MONGO_USERNAME": config.requireSecret('responsive_mongo_username').apply(encode),
+            "__EXT_RESPONSIVE_MONGO_PASSWORD": config.requireSecret('responsive_mongo_password').apply(encode),
+            "__EXT_RESPONSIVE_PLATFORM_API_KEY": config.requireSecret('responsive_platform_key').apply(encode),
+            "__EXT_RESPONSIVE_PLATFORM_SECRET": config.requireSecret('responsive_platform_secret').apply(encode),
+            "__EXT_RESPONSIVE_MONGO_ENDPOINT": encode(config.require('responsive_mongo_hostname')),
             "KAFKA_API_KEY": config.requireSecret('kafka_api_key').apply(encode),
             "KAFKA_API_SECRET": config.requireSecret('kafka_api_secret').apply(encode),
         },
