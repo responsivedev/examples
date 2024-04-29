@@ -39,7 +39,7 @@ if [ ! -f "$REPO_ROOT/kind/app.properties" ]; then
   cp "$REPO_ROOT/kind/default.properties" "$REPO_ROOT/kind/app.properties"
 fi
 
-if grep -q "required field" "$REPO_ROOT/kind/app.properties"; then
+if grep -q "required" "$REPO_ROOT/kind/app.properties"; then
   echo "The configuration in $REPO_ROOT/kind/app.properties must be filled out"
   exit 1
 fi

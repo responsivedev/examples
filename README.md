@@ -145,12 +145,12 @@ repository. This file should contain the following configuration properties:
 
 ```properties
 # metrics secrets (environment API key)
-responsive.metrics.api.key=
-responsive.metrics.secret=
+responsive.platform.api.key=
+responsive.platform.secret=
 
 # storage secrets
-responsive.client.id=
-responsive.client.secret=
+responsive.mongo.username=
+responsive.mongo.password=
 ```
 
 To apply these secrets, run:
@@ -199,13 +199,12 @@ you will see the processing rate on the dashboard increase
 
 ### Getting `Invalid API Key or Secret` in the logs
 
-Make sure that you have properly configured `secrets/responsive-metrics-creds.properties`. An
+Make sure that you have properly configured `secrets/responsive-creds.properties`. An
 example file looks like this:
 ```properties
 # Responsive API Credentials | responsive-kind
-
-responsive.metrics.api.key=ABCDEFGHIJKLMNOP
-responsive.metrics.secret=ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG1234567890=
+responsive.platform.api.key=ABCDEFGHIJKLMNOP
+responsive.platform.secret=ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG1234567890=
 ```
 
 ### Getting `Exception opening socket` in the logs
