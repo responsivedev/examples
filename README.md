@@ -15,7 +15,7 @@ This quickstart example relies on the presence of a local docker image for
 `responsive-example`. You can generate this image by running:
 
 ```bash
-$ ./gradlew :streams-app:jibDockerBuild
+./gradlew :streams-app:jibDockerBuild
 ```
 
 ## Deploying a KinD Cluster
@@ -28,7 +28,7 @@ The next step is to deploy a local k8s cluster with:
 
 Deploy these by running:
 ```bash
-$ bash ./kind/bootstrap.sh
+bash ./kind/bootstrap.sh
 ```
 
 Once this completes, you should be able to see the following pods deployed:
@@ -123,9 +123,6 @@ your local ip to the access list**. This happens within the scope of an applicat
 
 ![configure-storage.png](docs/configure-storage.png)
 
-**NOTE:** for both of these files, you will need to change the property values to
-be the expected configurations (we're working on making this easier!)
-
 ### Configurations
 
 There are two parts to the configurations:
@@ -146,7 +143,7 @@ repository. This file should contain the following configuration properties:
 ```properties
 # metrics secrets (environment API key)
 responsive.platform.api.key=
-responsive.platform.secret=
+responsive.platform.api.secret=
 
 # storage secrets
 responsive.mongo.username=
@@ -156,7 +153,7 @@ responsive.mongo.password=
 To apply these secrets, run:
 
 ```bash
-$ bash ./scripts/update-app-secrets.sh
+bash ./scripts/update-app-secrets.sh
 ```
 
 ## Rebuild & Redeploy
@@ -165,8 +162,8 @@ Now that you have migrated your application to `ResponsiveKafkaStreams` and set
 up all the configurations required, the next step is to rebuild and redeploy:
 
 ```bash
-$ ./gradlew :streams-app:jibDockerBuild
-$ bash ./kind/bootstrap.sh
+./gradlew :streams-app:jibDockerBuild
+bash ./kind/bootstrap.sh
 ```
 
 When the application restarts you should start to see metrics on the dashboard.
@@ -204,7 +201,7 @@ example file looks like this:
 ```properties
 # Responsive API Credentials | responsive-kind
 responsive.platform.api.key=ABCDEFGHIJKLMNOP
-responsive.platform.secret=ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG1234567890=
+responsive.platform.api.secret=ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG1234567890=
 ```
 
 ### Getting `Exception opening socket` in the logs
