@@ -71,7 +71,7 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: CLUSTER_ID
-              value: 39926ADE-CE84-48D9-A027-0B937158BC96
+              value: "jHS82zyorYvKMntfzD4XRQ"
             - name: KAFKA_PROCESS_ROLES
               value: "controller,broker"
             - name: KAFKA_NODE_ID
@@ -87,7 +87,7 @@ spec:
             - name: KAFKA_ADVERTISED_LISTENERS
               value: "INTER_BROKER://kafka-broker:29092,PUBLIC://kafka-broker:9092"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
-              value: INTER_BROKER
+              value: "INTER_BROKER"
             - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
               value: "1"
             - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
