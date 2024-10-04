@@ -1,0 +1,74 @@
+######################
+# On-Cluster MongoDB #
+######################
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: responsive
+  labels:
+    app: mongo
+spec:
+  ports:
+    - port: 27017
+      name: main
+      protocol: TCP
+  selector:
+    app: mongo
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongo-data-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /data/mongo
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "mongo"
+  namespace: responsive
+spec:
+  selector:
+    matchLabels:
+      app: "mongo"
+  replicas: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: "mongo"
+    spec:
+      containers:
+        - name: "mongo"
+          image: mongo:7.0.2
+          imagePullPolicy: IfNotPresent
+          args: [ "--dbpath", "/data/db" ]
+          volumeMounts:
+            - name: "mongo-data-dir"
+              mountPath: "/data/db"
+      volumes:
+        - name: "mongo-data-dir"
+          persistentVolumeClaim:
+            claimName: mongo-data-pvc

@@ -1,0 +1,79 @@
+#######################
+# On-Cluster ScyllaDB #
+#######################
+apiVersion: v1
+kind: Service
+metadata:
+  name: scylladb
+  namespace: responsive
+  labels:
+    app: scylladb
+spec:
+  ports:
+    - port: 9042
+      name: cql
+      protocol: TCP
+    - port: 7199
+      name: jmx
+      protocol: TCP
+    - port: 7000
+      name: transport
+      protocol: TCP
+  selector:
+    app: scylladb
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: scylladb-data-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /data/scylladb
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scylladb-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "scylladb"
+  namespace: responsive
+spec:
+  selector:
+    matchLabels:
+      app: "scylladb"
+  replicas: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: "scylladb"
+    spec:
+      containers:
+        - name: "scylladb"
+          image: "bitnami/scylladb:latest"
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: "scylladb-data-dir"
+              mountPath: "/bitnami/scylladb"
+      volumes:
+        - name: "scylladb-data-dir"
+          persistentVolumeClaim:
+            claimName: scylladb-data-pvc
